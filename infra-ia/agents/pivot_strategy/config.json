@@ -1,0 +1,48 @@
+{
+  "performance_thresholds": {
+    "open_rate": {
+      "excellent": 0.5,
+      "good": 0.3,
+      "average": 0.2,
+      "poor": 0.1
+    },
+    "response_rate": {
+      "excellent": 0.2,
+      "good": 0.1,
+      "average": 0.05,
+      "poor": 0.02
+    },
+    "positive_rate": {
+      "excellent": 0.5,
+      "good": 0.3,
+      "average": 0.15,
+      "poor": 0.05
+    },
+    "conversion_rate": {
+      "excellent": 0.1,
+      "good": 0.05,
+      "average": 0.02,
+      "poor": 0.01
+    }
+  },
+  "alert_thresholds": {
+    "bounce_rate": 0.1,
+    "unsubscribe_rate": 0.05
+  },
+  "store_analysis_in_qdrant": true,
+  "store_recommendations_in_qdrant": true,
+  "recommendation_models": {
+    "campaign": "gpt-4.1",
+    "niche": "gpt-4.1",
+    "global": "gpt-4.1-mini"
+  },
+  "analysis_frequency": {
+    "campaigns": "daily",
+    "niches": "weekly",
+    "global": "monthly"
+  },
+  "min_data_points": 10,
+  "max_recommendations": 5,
+  "knowledge_collection": "knowledge",
+  "learning_retention_days": 180
+}

@@ -1,0 +1,14 @@
+{
+  "name": "CleanerAgent",
+  "description": "Agent qui nettoie les leads bruts récupérés par le ScraperAgent",
+  "required_fields": ["email", "first_name", "last_name", "company"],
+  "completion_fields": ["position", "company", "industry", "company_size"],
+  "reject_invalid_emails": true,
+  "fix_urls": true,
+  "strip_legal_suffixes": true,
+  "allow_incomplete_leads": false,
+  "auto_complete": true,
+  "legal_suffixes": ["Inc", "LLC", "Ltd", "SARL", "SAS", "SA", "GmbH", "Corp"],
+  "max_auto_completion_attempts": 50,
+  "retry_on_completion_failure": true
+}

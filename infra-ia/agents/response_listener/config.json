@@ -1,0 +1,17 @@
+{
+  "name": "ResponseListenerAgent",
+  "description": "Agent de réception des réponses externes (emails, SMS)",
+  "version": "1.0.0",
+  "log_level": "INFO",
+  "enabled": true,
+  "max_message_size": 10000,
+  "supported_channels": ["email", "sms"],
+  "email_settings": {
+    "allowed_domains": [],
+    "block_list": []
+  },
+  "sms_settings": {
+    "allowed_countries": ["+33"],
+    "block_list": []
+  }
+}

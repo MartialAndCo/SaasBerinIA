@@ -1,0 +1,24 @@
+{
+  "name": "ScraperAgent",
+  "default_source": "apify",
+  "limit_per_run": 50,
+  "use_mock_data": false,
+  "save_to_db": true,
+  "excluded_domains": [
+    "gmail.com",
+    "yahoo.com",
+    "hotmail.com"
+  ],
+  "actor_ids": {
+    "apify": {
+      "business": "apify/google-places-scraper",
+      "linkedin": "apify/linkedin-scraper",
+      "default": "apify/website-content-crawler"
+    }
+  },
+  "apify_options": {
+    "include_website": true,
+    "include_email": true,
+    "include_phone": true
+  }
+}

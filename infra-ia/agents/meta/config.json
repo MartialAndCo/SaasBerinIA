@@ -1,0 +1,26 @@
+{
+    "name": "MetaAgent",
+    "description": "Agent central d'intelligence conversationnelle",
+    "version": "1.0.0",
+    "confidence_threshold": 0.4,
+    "max_history_entries": 10,
+    "max_actions_per_request": 5,
+    "default_agents": {
+        "count_leads": "ScraperAgent",
+        "send_message": "MessagingAgent",
+        "analyze_stats": "PivotStrategyAgent",
+        "system_status": "OverseerAgent",
+        "general_questions": "AdminInterpreterAgent",
+        "database_queries": "DatabaseQueryAgent"
+    },
+    "common_intents": [
+        "count_entities",
+        "send_communication",
+        "get_status",
+        "analyze_data",
+        "execute_workflow",
+        "help",
+        "unknown"
+    ],
+    "use_simple_response_for_greetings": true
+}

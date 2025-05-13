@@ -1,0 +1,50 @@
+{
+  "lead_id": "vision_test_001",
+  "company": "Journal Le Monde",
+  "company_website": "https://www.lemonde.fr",
+  "email": "contact@lemonde.fr",
+  "first_name": "Test",
+  "last_name": "User",
+  "status": "new",
+  "web_metadata": {
+    "analyzed_at": "",
+    "reachable": true,
+    "has_popup": true,
+    "popup_removed": true,
+    "site_type": "site d\u2019actualit\u00e9 / journal en ligne",
+    "visual_quality": 8,
+    "professionalism": 9,
+    "strengths": [
+      "Structure claire et hi\u00e9rarchis\u00e9e pour l\u2019acc\u00e8s \u00e0 l\u2019information",
+      "Navigation principale compl\u00e8te et bien plac\u00e9e en haut",
+      "Utilisation efficace de l\u2019espace pour mettre en avant l\u2019actualit\u00e9 importante",
+      "Design sobre, professionnel et centr\u00e9 sur la lisibilit\u00e9",
+      "Blocs bien d\u00e9limit\u00e9s par rapport aux th\u00e8mes / rubriques"
+    ],
+    "weaknesses": [
+      "Possibilit\u00e9 de surcharge visuelle \u00e0 cause de la densit\u00e9 d\u2019informations",
+      "Certains espaces blancs tr\u00e8s importants qui peuvent sembler vides ou d\u00e9s\u00e9quilibr\u00e9s",
+      "Peu d\u2019\u00e9l\u00e9ments interactifs ou engageants en dehors des articles",
+      "Lisibilit\u00e9 des petites polices dans le pied de page perfectible"
+    ],
+    "technologies": [
+      "HTML5",
+      "CSS3",
+      "JavaScript",
+      "Probablement React.js ou un autre framework moderne",
+      "Syst\u00e8mes de gestion de contenu (CMS) personnalis\u00e9",
+      "Framework d\u2019optimisation de performance et responsive (Webpack, Next.js possible)"
+    ],
+    "main_colors": [],
+    "target_audience": "Lecteurs adultes, professionnels, \u00e9tudiants, personnes recherchant une information v\u00e9rifi\u00e9e et approfondie",
+    "maturity_score": 74,
+    "maturity_tag": "standard_site",
+    "web_status_tag": "potentiel d'am\u00e9lioration",
+    "tech_tags": [],
+    "screenshots": {
+      "initial": "/root/berinia/infra-ia/agents/visual_analyzer/vision_screenshots/www-lemonde-fr_initial.png",
+      "clean": "/root/berinia/infra-ia/agents/visual_analyzer/vision_screenshots/www-lemonde-fr_clean.png",
+      "final": "/root/berinia/infra-ia/agents/visual_analyzer/vision_screenshots/www-lemonde-fr_final.png"
+    }
+  }
+}

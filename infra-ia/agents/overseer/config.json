@@ -1,0 +1,24 @@
+{
+  "name": "OverseerAgent",
+  "description": "Agent central qui supervise et coordonne l'ensemble du système",
+  "model": "gpt-4.1",
+  "temperature": 0.3,
+  "max_tokens": 2000,
+  "workflows": {
+    "scraping_to_cleaning": [
+      {"agent": "ScraperAgent", "input_key": null, "output_key": "leads"},
+      {"agent": "CleanerAgent", "input_key": "leads", "output_key": "cleaned_leads"}
+    ],
+    "full_qualification": [
+      {"agent": "ScraperAgent", "input_key": null, "output_key": "leads"},
+      {"agent": "CleanerAgent", "input_key": "leads", "output_key": "cleaned_leads"},
+      {"agent": "ScoringAgent", "input_key": "cleaned_leads", "output_key": "scored_leads"},
+      {"agent": "ValidatorAgent", "input_key": "scored_leads", "output_key": "validated_leads"},
+      {"agent": "DuplicateCheckerAgent", "input_key": "validated_leads", "output_key": "final_leads"}
+    ],
+    "messaging_workflow": [
+      {"agent": "MessagingAgent", "input_key": null, "output_key": "sent_messages"},
+      {"agent": "FollowUpAgent", "input_key": "sent_messages", "output_key": "follow_ups"}
+    ]
+  }
+}

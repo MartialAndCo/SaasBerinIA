@@ -1,0 +1,6 @@
+● berinia-api.service - Berinia API Service
+     Loaded: loaded (/etc/systemd/system/berinia-api.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Thu 2025-05-01 21:15:18 UTC; 3s ago
+    Process: 321546 ExecStart=/root/berinia/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 [0;1;31m(code=exited, status=1/FAILURE)[0m
+   Main PID: 321546 (code=exited, status=1/FAILURE)
+        CPU: 978ms

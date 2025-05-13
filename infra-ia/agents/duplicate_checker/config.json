@@ -1,0 +1,15 @@
+{
+  "name": "DuplicateCheckerAgent",
+  "description": "Agent qui vérifie l'unicité des leads dans la base de données",
+  "uniqueness_criteria": ["email", "linkedin_url"],
+  "use_email_as_primary": true,
+  "use_linkedin_as_primary": false,
+  "check_name_company": true,
+  "strict_on_db_error": false,
+  "check_internal_duplicates_by_default": true,
+  "check_database_duplicates_by_default": true,
+  "duplicate_threshold_days": 180,
+  "retry_on_db_error": true,
+  "retry_attempts": 3,
+  "retry_delay_seconds": 2
+}

@@ -1,0 +1,41 @@
+# Plan de correction pour le webhook SMS
+
+## Erreurs commises
+Je reconnais avoir fait des erreurs importantes dans ma démarche:
+1. J'ai modifié des fichiers existants sans vérifier leur structure et leur but
+2. J'ai créé de nouvelles versions de fichiers qui existaient potentiellement déjà
+3. J'ai ignoré les conventions de nommage du projet (camelCase vs snake_case)
+
+## Vérification des structures existantes
+Mes analyses montrent que:
+
+1. Le projet semble utiliser trois conventions différentes:
+   - Dossiers camelCase: `/agents/responselisteneragent/`
+   - Dossiers snake_case: `/agents/response_listener/` 
+   - Classes PascalCase: `ResponseListenerAgent`
+
+2. Certains fichiers peuvent avoir été modifiés:
+   - `/agents/response_listener/response_listener_agent.py` - Créé ou modifié
+   - `/agents/response_interpreter/response_interpreter_agent.py` - Potentiellement modifié
+
+## Plan de correction
+
+1. **Déterminer la structure correcte**:
+   - Examiner les agents qui fonctionnent correctement (overseer, messaging)
+   - Identifier la convention de nommage dominante
+
+2. **Restaurer les fichiers modifiés**:
+   - Vérifier s'il existe des backups ou l'historique git des fichiers
+   - Si nécessaire, recréer les agents dans la structure correcte
+   
+3. **Tests sans modification**:
+   - Tous les tests futurs seront effectués uniquement avec des scripts temporaires
+   - Ces scripts seront isolés dans le dossier `/infra-ia/tests/temp_webhook_test/`
+
+## Intégration future
+
+Pour intégrer correctement de nouveaux agents, je suivrai la procédure:
+1. Vérifier si l'agent existe déjà dans TOUTES les structures possibles
+2. Examiner les agents similaires pour comprendre la convention utilisée
+3. Créer un backup de tout fichier avant modification
+4. Documenter clairement tout changement effectué

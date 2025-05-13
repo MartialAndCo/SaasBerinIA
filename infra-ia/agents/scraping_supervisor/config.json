@@ -1,0 +1,11 @@
+{
+  "name": "ScrapingSupervisor",
+  "description": "Superviseur des agents liés au scraping de leads",
+  "limit_per_run": 50,
+  "preferred_sources": ["apify", "apollo"],
+  "blacklisted_niches": ["crypto", "gambling", "adult"],
+  "language": "fr",
+  "max_daily_leads": 200,
+  "scraping_interval_hours": 24,
+  "auto_clean": true
+}

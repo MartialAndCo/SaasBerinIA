@@ -1,0 +1,83 @@
+{
+  "name": "FollowUpAgent",
+  "description": "Agent qui gère les relances automatiques",
+  "test_mode": true,
+  "use_llm_for_sequence": false,
+  "sequences": {
+    "standard": {
+      "name": "Séquence standard",
+      "description": "Séquence de relance standard en 3 étapes",
+      "steps": [
+        {
+          "days_after_previous": 3,
+          "template_id": "template_follow_up_1"
+        },
+        {
+          "days_after_previous": 7,
+          "template_id": "template_follow_up_2"
+        },
+        {
+          "days_after_previous": 14,
+          "template_id": "template_follow_up_3"
+        }
+      ]
+    },
+    "decision_maker": {
+      "name": "Séquence pour décideurs",
+      "description": "Séquence adaptée aux décideurs, plus espacée dans le temps",
+      "steps": [
+        {
+          "days_after_previous": 5,
+          "template_id": "template_decision_maker_1"
+        },
+        {
+          "days_after_previous": 10,
+          "template_id": "template_decision_maker_2"
+        }
+      ]
+    },
+    "educational": {
+      "name": "Séquence éducative",
+      "description": "Séquence à valeur ajoutée avec contenu éducatif",
+      "steps": [
+        {
+          "days_after_previous": 3,
+          "template_id": "template_edu_1"
+        },
+        {
+          "days_after_previous": 5,
+          "template_id": "template_edu_2"
+        },
+        {
+          "days_after_previous": 7,
+          "template_id": "template_edu_3"
+        }
+      ]
+    },
+    "conversion": {
+      "name": "Séquence de conversion",
+      "description": "Séquence pour les leads engagés, axée sur la conversion",
+      "steps": [
+        {
+          "days_after_previous": 2,
+          "template_id": "template_conversion_1"
+        },
+        {
+          "days_after_previous": 3,
+          "template_id": "template_conversion_2"
+        }
+      ]
+    }
+  },
+  "timing_rules": {
+    "default_days_between_follow_ups": 7,
+    "min_days_between_follow_ups": 2,
+    "max_days_between_follow_ups": 21,
+    "weekday_preference": ["Tuesday", "Wednesday", "Thursday"],
+    "weekend_allowed": false,
+    "optimal_hour": {
+      "morning": 10,
+      "afternoon": 14
+    }
+  }
+}

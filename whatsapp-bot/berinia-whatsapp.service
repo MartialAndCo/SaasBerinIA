@@ -1,0 +1,24 @@
+[Unit]
+Description=BerinIA WhatsApp Integration Service
+After=network.target postgresql.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/berinia/whatsapp-bot
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="NODE_ENV=production"
+ExecStart=/usr/bin/node /root/berinia/whatsapp-bot/index.js
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+# Security
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+{
+  "name": "NicheClassifierAgent",
+  "description": "Agent de classification des niches par familles et de génération d'approches personnalisées",
+  "llm_model": "gpt-4.1-mini",
+  "llm_temperature": 0.2,
+  "confidence_threshold": 0.6,
+  "use_visual_analysis": true,
+  "enable_llm_fallback": true,
+  "default_family": "b2b_services",
+  "update_frequency": "daily",
+  "families_path": "../../data/niche_families.json",
+  "debug_mode": false
+}

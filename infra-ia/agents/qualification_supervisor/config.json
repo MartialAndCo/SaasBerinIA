@@ -1,0 +1,46 @@
+{
+  "name": "QualificationSupervisor",
+  "description": "Superviseur des agents qui analysent et valident les leads",
+  "qualification_criteria": {
+    "min_score": 5.0,
+    "require_professional_email": true,
+    "require_company_website": true,
+    "valid_company_sizes": ["11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10000+"],
+    "require_position": true,
+    "require_industry": true,
+    "min_fields_completion": 0.8
+  },
+  "blacklisted_domains": [
+    "gmail.com",
+    "hotmail.com",
+    "yahoo.com",
+    "outlook.com",
+    "aol.com",
+    "icloud.com",
+    "protonmail.com",
+    "mail.com",
+    "yandex.com",
+    "gmx.com"
+  ],
+  "preferred_positions": [
+    "CEO",
+    "CTO",
+    "CFO",
+    "CMO",
+    "COO",
+    "Founder",
+    "Co-founder",
+    "Owner",
+    "Director",
+    "VP",
+    "Head of",
+    "Manager"
+  ],
+  "automatic_rejection_reasons": [
+    "Email non professionnel",
+    "Site web manquant",
+    "Poste non décisionnel",
+    "Taille d'entreprise non ciblée",
+    "Score insuffisant"
+  ]
+}

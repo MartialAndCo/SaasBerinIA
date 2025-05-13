@@ -1,0 +1,48 @@
+{
+  "name": "MessagingAgent",
+  "description": "Agent responsable de l'envoi des messages aux leads",
+  "daily_limit": 100,
+  "batch_size": 20,
+  "time_between_batches": 60,
+  "test_mode": false,
+  "email": {
+    "service": "mailgun",
+    "from_email": "contact@berinia.com"
+ },
+  "sms": {
+    "service": "twilio",
+    "from_number": "+33757594999"
+ },
+  "templates": {
+    "template_initial": {
+      "name": "Premier contact",
+      "subject": "Proposition de valeur pour {company}",
+      "content": "<p>Bonjour {first_name},</p><p>Je m'adresse à vous en tant que {position} de {company}.</p><p>Notre solution aide les entreprises dans le secteur {industry} à optimiser leurs performances.</p><p>Seriez-vous disponible pour échanger 15 minutes à ce sujet ?</p><p>Cordialement,<br/>L'équipe Berinia</p>",
+      "type": "initial"
+    },
+    "template_follow_up_1": {
+      "name": "Relance 1",
+      "subject": "Re: Proposition de valeur pour {company}",
+      "content": "<p>Bonjour {first_name},</p><p>Je me permets de revenir vers vous concernant ma précédente proposition.</p><p>Auriez-vous quelques minutes pour échanger sur les avantages que notre solution pourrait apporter à {company} ?</p><p>Cordialement,<br/>L'équipe Berinia</p>",
+      "type": "follow_up"
+    },
+    "template_follow_up_2": {
+      "name": "Relance 2",
+      "subject": "Dernière relance - Proposition pour {company}",
+      "content": "<p>Bonjour {first_name},</p><p>Je comprends que vous êtes probablement très occupé(e).</p><p>Voici simplement un bref récapitulatif des avantages que notre solution pourrait apporter à {company} :</p><ul><li>Optimisation des processus</li><li>Réduction des coûts</li><li>Amélioration de la productivité</li></ul><p>Restons en contact si ces sujets vous intéressent à l'avenir.</p><p>Cordialement,<br/>L'équipe Berinia</p>",
+      "type": "follow_up"
+    },
+    "template_positive_response": {
+      "name": "Réponse à intérêt positif",
+      "subject": "Re: {subject}",
+      "content": "<p>Bonjour {first_name},</p><p>Merci beaucoup pour votre réponse et votre intérêt !</p><p>Je serais ravi d'organiser un appel pour discuter plus en détail des besoins spécifiques de {company} et de la façon dont notre solution pourrait vous aider.</p><p>Quelles seraient vos disponibilités dans les prochains jours ?</p><p>Cordialement,<br/>L'équipe Berinia</p>",
+      "type": "response"
+    },
+    "template_neutral_response": {
+      "name": "Réponse à message neutre",
+      "subject": "Re: {subject}",
+      "content": "<p>Bonjour {first_name},</p><p>Merci pour votre réponse.</p><p>Pour répondre à vos questions :</p><ul><li>Notre solution s'adapte parfaitement au secteur {industry}</li><li>L'installation est simple et rapide</li><li>Nous proposons un support client réactif</li></ul><p>Seriez-vous intéressé(e) par une démonstration personnalisée ?</p><p>Cordialement,<br/>L'équipe Berinia</p>",
+      "type": "response"
+    }
+  }
+}

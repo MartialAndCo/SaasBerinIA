@@ -1,0 +1,98 @@
+{
+  "name": "WebPresenceCheckerAgent",
+  "description": "Agent d'analyse de la présence web des leads",
+  "version": "1.0.0",
+  "timeout": 30,
+  "analysis_levels": {
+    "basic": {
+      "description": "Vérification simple (accessibilité, existence)",
+      "timeout": 5
+    },
+    "standard": {
+      "description": "Analyse standard (meta, titre, liens, structure)",
+      "timeout": 15
+    },
+    "advanced": {
+      "description": "Analyse complète (CMS, formulaires, SEO, tech stack)",
+      "timeout": 30
+    }
+  },
+  "default_level": "advanced",
+  "cache_duration": 86400,
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
+  ],
+  "maturity_thresholds": {
+    "no_site": 0,
+    "basic_site": 20,
+    "standard_site": 50,
+    "pro_site": 80
+  },
+  "cms_patterns": [
+    {
+      "name": "WordPress",
+      "patterns": [
+        "/wp-content/",
+        "/wp-includes/",
+        "wp-json",
+        "generator\" content=\"WordPress"
+      ]
+    },
+    {
+      "name": "Shopify",
+      "patterns": [
+        "cdn.shopify.com",
+        "shopify.com/s/files/",
+        "myshopify.com"
+      ]
+    },
+    {
+      "name": "Wix",
+      "patterns": [
+        "wix.com",
+        "_wixCIDX",
+        "Wix.com Website Builder"
+      ]
+    },
+    {
+      "name": "Drupal",
+      "patterns": [
+        "Drupal",
+        "/sites/default/files/",
+        "jQuery.extend(Drupal"
+      ]
+    },
+    {
+      "name": "Joomla",
+      "patterns": [
+        "/media/jui/",
+        "/media/system/",
+        "joomla!"
+      ]
+    }
+  ],
+  "tech_signatures": [
+    {
+      "name": "React",
+      "patterns": ["react", "reactjs", "_reactRootContainer"]
+    },
+    {
+      "name": "Vue.js",
+      "patterns": ["vue", "vuejs", "__vue__"]
+    },
+    {
+      "name": "Angular",
+      "patterns": ["ng-", "angular", "ngRepeat"]
+    },
+    {
+      "name": "Bootstrap",
+      "patterns": ["bootstrap", "navbar-toggle", "container-fluid"]
+    },
+    {
+      "name": "jQuery",
+      "patterns": ["jquery", "jQuery"]
+    }
+  ]
+}

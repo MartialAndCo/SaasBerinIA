@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""
+Module de webhook pour l'intégration WhatsApp.
+
+Ce module gère la réception et le traitement des messages WhatsApp
+via le webhook FastAPI.
+"""
+import os
+import sys
+import json
+import logging
+import asyncio
+from typing import Dict, Any, Optional
+
+# Ajout du répertoire parent au path pour les imports
+script_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(script_dir)
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+# Import de la nouvelle configuration de logging
+from utils.logging_config import get_logger
+
+# Import des modules BerinIA
+from webhook.webhook_config import get_webhook_agents
+from utils.agent_definitions import WEBHOOK_REQUIRED_AGENTS
+
+# Configuration du logger
+logger = get_logger("webhook.whatsapp")
+
+class WhatsAppWebhook:
+    """
+    Classe de gestion du webhook WhatsApp
+    """
+    def __init__(self):
+        """
+        Initialise le gestionnaire de webhook WhatsApp
+        """
+        logger.info("Initialisation du webhook WhatsApp")
+        self.agents = {}
+        self.initialized = False
+        
+    async def initialize(self):
+        """
+        Initialise les agents BerinIA pour le traitement des messages
+        """
+        if not self.initialized:
+            logger.info("Initialisation des agents pour le webhook WhatsApp")
+            try:
+                # Récupération des agents depuis le registre
+                self.agents = get_webhook_agents()
+                
+                if not self.agents:
+                    logger.error("Aucun agent n'a pu être initialisé pour le webhook")
+                    return False
+                
+                # Vérifier que tous les agents requis sont disponibles
+                missing_agents = [name for name in WEBHOOK_REQUIRED_AGENTS if name not in self.agents]
+                if missing_agents:
+                    logger.error(f"Agents manquants: {', '.join(missing_agents)}")
+                    return False
+                
+                self.initialized = True
+                logger.info(f"Webhook WhatsApp initialisé avec {len(self.agents)} agents")
+                return True
+                
+            except Exception as e:
+                logger.error(f"Erreur lors de l'initialisation du webhook WhatsApp: {str(e)}")
+                import traceback
+                logger.error(traceback.format_exc())
+                return False
+        return True
+    
+    async def process_message(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Traite un message WhatsApp reçu
+
+        Args:
+            data: Message WhatsApp reçu
+
+        Returns:
+            Réponse à renvoyer
+        """
+        try:
+            # S'assurer que les agents sont initialisés
+            if not await self.initialize():
+                logger.error("Impossible de traiter le message: webhook non initialisé")
+                return {"error": "Webhook non initialisé", "debug": "Les agents n'ont pas pu être initialisés"}
+
+            logger.info(f"Message WhatsApp reçu: {json.dumps(data)}")
+
+            # Extraction des informations du message (support des deux formats)
+            # Format 1: Structure utilisée par le test (sender, profile_name, message.text)
+            # Format 2: Structure du bot WhatsApp (author, content)
+
+            # Essayer d'extraire le contenu du message
+            message_content = ""
+            sender = ""
+            profile_name = ""
+
+            # Format test
+            if "message" in data and isinstance(data["message"], dict):
+                message_content = data["message"].get("text", "")
+                sender = data.get("sender", "")
+                profile_name = data.get("profile_name", "")
+
+            # Format bot WhatsApp
+            elif "content" in data:
+                message_content = data.get("content", "")
+                sender = data.get("author", "")
+                profile_name = data.get("source", "WhatsApp")
+                if "group" in data:
+                    profile_name = f"{data.get('group', '')} (WhatsApp)"
+
+            if not message_content or not sender:
+                logger.warning("Message incomplet, impossible de traiter")
+                logger.warning(f"Données reçues: {json.dumps(data)}")
+                return {"error": "Message incomplet", "debug": f"Données reçues: {json.dumps(data)}"}
+
+            logger.info(f"Message de '{profile_name}' ({sender}): {message_content}")
+
+            # Vérifier que l'agent MetaAgent est disponible - C'est l'entrée principale pour tous les messages
+            if "MetaAgent" not in self.agents:
+                logger.error("Agent MetaAgent non disponible - impossible de traiter le message de manière intelligente")
+                
+                # Vérifier si on a au moins le MessagingAgent comme fallback
+                if "MessagingAgent" not in self.agents:
+                    logger.error("Agent MessagingAgent non disponible non plus")
+                    return {
+                        "error": "Agents requis non disponibles",
+                        "debug": "Ni MetaAgent ni MessagingAgent ne sont disponibles"
+                    }
+                
+                # Fallback vers MessagingAgent si MetaAgent n'est pas disponible
+                logger.warning("Utilisation du MessagingAgent comme fallback")
+                agent_key = "MessagingAgent"
+            else:
+                # Utiliser le MetaAgent comme entrée principale
+                agent_key = "MetaAgent"
+
+            # Récupération de l'agent
+            agent = self.agents[agent_key]
+
+            # Création d'un contexte pour l'agent
+            context = {
+                "sender": sender,
+                "recipient": "BerinIA",
+                "message": message_content,
+                "content": message_content,  # Pour compatibilité avec tous les agents
+                "profile_name": profile_name,
+                "message_type": "whatsapp",
+                "source": "whatsapp",
+                "group": data.get("group", "Direct Message"),
+                "author": sender
+            }
+
+            # Traitement du message par l'agent
+            logger.info(f"Traitement du message par {agent_key}: '{message_content}'")
+
+            try:
+                # Utiliser la méthode run standard pour MetaAgent
+                if agent_key == "MetaAgent":
+                    result = agent.run(context)
+                    if not result:
+                        raise ValueError(f"Aucun résultat reçu de {agent_key}")
+                    
+                    # Le MetaAgent renvoie toujours un message
+                    if "message" in result:
+                        response = result["message"]
+                    else:
+                        response = f"Erreur: Réponse sans message de {agent_key}"
+                
+                # Pour MessagingAgent (fallback), utiliser process_incoming s'il existe
+                elif hasattr(agent, 'process_incoming'):
+                    result = agent.process_incoming(message_content, context)
+                    response = result.get('response', f"Message traité par {agent_key}")
+                
+                # Dernier recours, utiliser run standard
+                else:
+                    result = agent.run(context) 
+                    response = result.get('response', result.get('message', f"Message traité par {agent_key}"))
+            
+            except Exception as e:
+                logger.error(f"Erreur lors du traitement par l'agent {agent_key}: {str(e)}")
+                import traceback
+                stack_trace = traceback.format_exc()
+                logger.error(f"Stack trace: {stack_trace}")
+                
+                # On renvoie l'erreur réelle en mode debug
+                return {
+                    "error": f"Erreur de traitement: {str(e)}",
+                    "debug": stack_trace,
+                    "response": f"Erreur lors du traitement: {str(e)}"
+                }
+
+            logger.info(f"Réponse générée: {response}")
+            return {"response": response}
+
+        except Exception as e:
+            logger.error(f"Erreur lors du traitement du message: {str(e)}")
+            import traceback
+            stack_trace = traceback.format_exc()
+            logger.error(stack_trace)
+            
+            # On renvoie l'erreur complète plutôt qu'un message générique
+            return {
+                "error": f"Erreur du webhook: {str(e)}",
+                "debug": stack_trace,
+                "response": f"Erreur du système: {str(e)}"
+            }
+
+# Instance unique du webhook
+webhook_handler = WhatsAppWebhook()
+
+async def handle_whatsapp_webhook(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Point d'entrée pour le traitement des messages WhatsApp
+    
+    Args:
+        data: Données du webhook
+        
+    Returns:
+        Réponse à envoyer
+    """
+    logger.info("Traitement d'une requête webhook WhatsApp")
+    return await webhook_handler.process_message(data)

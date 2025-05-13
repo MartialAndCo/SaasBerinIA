@@ -1,0 +1,51 @@
+{
+  "name": "ScoringAgent",
+  "description": "Agent qui attribue un score à chaque lead selon des critères business",
+  "scoring_criteria": {
+    "position_weight": 0.3,
+    "company_size_weight": 0.2,
+    "email_quality_weight": 0.15,
+    "data_completeness_weight": 0.15,
+    "industry_fit_weight": 0.2
+  },
+  "position_scores": {
+    "CEO": 10,
+    "CTO": 9,
+    "CFO": 9,
+    "CMO": 8,
+    "COO": 8,
+    "Founder": 10,
+    "Co-founder": 9,
+    "Owner": 9,
+    "Director": 7,
+    "VP": 7,
+    "Head of": 6,
+    "Manager": 5,
+    "Assistant": 2,
+    "Intern": 1
+  },
+  "company_size_scores": {
+    "1-10": 3,
+    "11-50": 5,
+    "51-200": 7,
+    "201-500": 9,
+    "501-1000": 8,
+    "1001-5000": 6,
+    "5001-10000": 4,
+    "10000+": 3
+  },
+  "sort_by_score": true,
+  "use_llm_for_industry_fit": false,
+  "industry_keywords": {
+    "coaching": ["coaching", "formation", "développement personnel", "conseil"],
+    "marketing": ["marketing", "publicité", "communication", "digital"],
+    "tech": ["technologie", "logiciel", "saas", "cloud", "développement"],
+    "finance": ["finance", "banque", "assurance", "comptabilité"]
+  },
+  "relevant_industries": {
+    "coaching": ["Education", "Formation", "Conseil", "Développement Personnel"],
+    "marketing": ["Marketing", "Publicité", "Communication", "Digital"],
+    "tech": ["Technologie", "Informatique", "SaaS", "Cloud", "Software"],
+    "finance": ["Finance", "Banque", "Assurance", "Comptabilité"]
+  }
+}

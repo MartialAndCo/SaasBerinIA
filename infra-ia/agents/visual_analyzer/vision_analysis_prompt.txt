@@ -1,0 +1,37 @@
+Analyser cette capture d'écran de site web et fournir une évaluation complète et détaillée.
+
+TÂCHE PRINCIPALE:
+Analyser la structure visuelle, le design et la qualité générale du site web représenté dans cette capture d'écran.
+
+ÉLÉMENTS À ÉVALUER:
+1. Type de site (e-commerce, blog, site d'actualités, site corporate, portfolio, etc.)
+2. Qualité visuelle générale (échelle de 1-10)
+3. Niveau de professionnalisme (échelle de 1-10)
+4. Structure et organisation des éléments
+5. Navigation et accessibilité
+6. Hiérarchie de l'information
+7. Cohérence visuelle et identité de marque
+8. Éléments principaux visibles (navigation, en-tête, pied de page, etc.)
+9. Points forts visuels et ergonomiques
+10. Points faibles ou problèmes détectés
+11. Technologies potentiellement utilisées (framework UI, etc.)
+12. Public cible probable
+13. Thème ou secteur d'activité principal
+
+FORMAT DE RÉPONSE:
+Répondre OBLIGATOIREMENT au format JSON structuré suivant:
+{
+    "site_type": "type précis de site",
+    "visual_quality": 1-10,
+    "professionalism": 1-10,
+    "key_elements": ["élément1", "élément2", ...],
+    "strengths": ["force1", "force2", ...],
+    "weaknesses": ["faiblesse1", "faiblesse2", ...],
+    "technologies": ["tech1", "tech2", ...],
+    "description": "description synthétique et complète du site",
+    "content_focus": "sujet principal du site",
+    "target_audience": "audience visée",
+    "main_colors": ["couleur1", "couleur2", ...],
+    "navigation_quality": 1-10,
+    "mobile_friendly_assessment": "évaluation de l'adaptation mobile"
+}

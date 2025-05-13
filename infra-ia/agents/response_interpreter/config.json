@@ -1,0 +1,114 @@
+{
+  "name": "ResponseInterpreterAgent",
+  "description": "Agent responsable de l'analyse des réponses reçues",
+  "test_mode": true,
+  "analysis_method": "hybrid",
+  "min_confidence_threshold": 0.7,
+  "regex_patterns": {
+    "questions": [
+      "\\?",
+      "combien",
+      "comment",
+      "quand",
+      "pourquoi",
+      "quoi",
+      "quel",
+      "quelle",
+      "quels",
+      "quelles",
+      "où",
+      "qui"
+    ]
+  },
+  "keyword_lists": {
+    "positive": [
+      "intéressé",
+      "intéressée",
+      "intérêt",
+      "merci",
+      "oui",
+      "bien",
+      "super",
+      "génial",
+      "excellent",
+      "parfait",
+      "d'accord",
+      "ok",
+      "disponible",
+      "accepte",
+      "j'aimerais",
+      "je voudrais",
+      "pourriez-vous",
+      "pouvez-vous"
+    ],
+    "negative": [
+      "pas intéressé",
+      "pas intéressée",
+      "non",
+      "désolé",
+      "sorry",
+      "spam",
+      "désinscription",
+      "unsubscribe",
+      "remove",
+      "supprimer",
+      "blacklist",
+      "stop",
+      "arrêter",
+      "jamais",
+      "never",
+      "ne me contactez plus",
+      "ne pas recontacter"
+    ],
+    "objections": [
+      "cher",
+      "prix",
+      "coût",
+      "budget",
+      "trop cher",
+      "concurrent",
+      "concurrence",
+      "déjà",
+      "solution existante",
+      "pas maintenant",
+      "ultérieurement",
+      "plus tard",
+      "trop tôt",
+      "pas le temps",
+      "occupé"
+    ],
+    "opt_out": [
+      "unsubscribe",
+      "se désinscrire",
+      "désinscription",
+      "désabonnement",
+      "désabonner",
+      "ne plus recevoir",
+      "retirer de la liste",
+      "supprimer de votre liste",
+      "ne pas recontacter",
+      "ne me contactez plus",
+      "ne plus me contacter",
+      "arrêtez de m'envoyer",
+      "stop"
+    ]
+  },
+  "analysis_rules": {
+    "positive_threshold": 1,
+    "negative_threshold": 1,
+    "question_requires_response": true,
+    "escalate_on_uncertainty": true
+  },
+  "classification_schema": {
+    "sentiment": ["positive", "neutral", "negative"],
+    "interest_level": ["high", "medium", "low", "none"],
+    "action_types": [
+      "transfer_to_crm",
+      "send_follow_up",
+      "blacklist",
+      "flag",
+      "continue_sequence",
+      "none"
+    ]
+  }
+}

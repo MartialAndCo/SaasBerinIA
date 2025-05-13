@@ -1,0 +1,45 @@
+{
+    "name": "visual_analyzer",
+    "version": "1.0.0",
+    "description": "Agent d'analyse visuelle pour BerinIA - Détection de popups et analyse de sites web",
+    "settings": {
+        "vision_model": "gpt-4.1",
+        "screenshots_dir": "vision_screenshots",
+        "max_tokens": 1000,
+        "headless": true,
+        "viewport": {
+            "width": 1280,
+            "height": 800
+        },
+        "device_scale_factor": 1,
+        "timeout": 45000,
+        "wait_time": 3
+    },
+    "score_thresholds": {
+        "popup_detection": 60,
+        "visual_quality": {
+            "excellent": 8,
+            "good": 6,
+            "average": 5,
+            "poor": 3
+        },
+        "professionalism": {
+            "excellent": 8, 
+            "good": 6,
+            "average": 5,
+            "poor": 3
+        }
+    },
+    "prompt_templates": {
+        "popup_detection": "vision_detection_prompt.txt",
+        "site_analysis": "vision_analysis_prompt.txt",
+        "verification": "vision_verification_prompt.txt"
+    },
+    "dependencies": [
+        "openai",
+        "playwright",
+        "pillow",
+        "colorama",
+        "python-dotenv"
+    ]
+}

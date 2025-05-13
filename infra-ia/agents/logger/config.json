@@ -1,0 +1,58 @@
+{
+  "name": "LoggerAgent",
+  "description": "Agent central de traçage des communications entre agents",
+  "test_mode": true,
+  "max_cache_size": 1000,
+  "logs_dir": "logs",
+  "log_level": "INFO",
+  "log_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+  "database": {
+    "enabled": false,
+    "table": "agent_logs",
+    "batch_insert_size": 50,
+    "flush_interval_seconds": 60
+  },
+  "file_storage": {
+    "enabled": true,
+    "format": "jsonl",
+    "file": "agent_interactions.jsonl",
+    "rotation": {
+      "enabled": true,
+      "max_size_mb": 10,
+      "max_files": 10
+    }
+  },
+  "visualization": {
+    "default_view": "chat",
+    "include_timestamp": true,
+    "include_context": true,
+    "color_by_agent": true,
+    "max_message_length": 200
+  },
+  "filtering": {
+    "default_limit": 100,
+    "default_offset": 0,
+    "available_filters": [
+      "from_agent",
+      "to_agent",
+      "context_id",
+      "timestamp",
+      "message_contains"
+    ]
+  },
+  "stats": {
+    "collect_metrics": true,
+    "metrics_interval_seconds": 300,
+    "collect_performance_data": true
+  },
+  "security": {
+    "sanitize_messages": true,
+    "log_sensitive_data": false,
+    "sensitive_fields": [
+      "api_key",
+      "password",
+      "token",
+      "secret"
+    ]
+  }
+}

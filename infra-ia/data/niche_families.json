@@ -1,0 +1,136 @@
+{
+  "families": [
+    {
+      "id": "health",
+      "name": "Métiers de la santé",
+      "niches": [
+        "Chiropracteur", "Ostéopathe", "Podologue", "Orthophoniste",
+        "Psychologue", "Naturopathe", "Sophrologue"
+      ],
+      "needs": [
+        "chatbot_rdv", "standard_vocal", "formulaire_preconsultation"
+      ],
+      "scraping_targets": [
+        "site_web", "outil_reservation", "telephone_fixe"
+      ],
+      "logic": [
+        {
+          "condition": "no_site",
+          "proposal": "présence pro + IA de RDV"
+        },
+        {
+          "condition": "site_pauvre",
+          "proposal": "moderniser accueil patient avec IA"
+        },
+        {
+          "condition": "doctolib",
+          "proposal": "ajouter assistant complémentaire (FAQ, avis, préqualif)"
+        }
+      ]
+    },
+    {
+      "id": "retail",
+      "name": "Commerces physiques",
+      "niches": [
+        "Coiffeur", "Barbier", "Institut de beauté", "Spa", "Tatoueur"
+      ],
+      "needs": [
+        "chatbot_simple", "assistant_vocal", "affichage_prestations"
+      ],
+      "scraping_targets": [
+        "site_web", "rdv_module", "avis_google", "horaires", "telephone"
+      ],
+      "logic": [
+        {
+          "condition": "no_site",
+          "proposal": "pack complet (site + IA simple)"
+        },
+        {
+          "condition": "site_sans_ia",
+          "proposal": "ajouter IA pour conversion"
+        },
+        {
+          "condition": "site_complet",
+          "proposal": "ajouter IA vocale ou feedback clients"
+        }
+      ]
+    },
+    {
+      "id": "real_estate",
+      "name": "Immobilier & Habitat",
+      "niches": [
+        "Agent immobilier", "Diagnostiqueur", "Rénovateur", "Gestionnaire de biens"
+      ],
+      "needs": [
+        "chatbot_qualification", "standard_filtrant", "faq_interactive"
+      ],
+      "scraping_targets": [
+        "site_web", "formulaire", "facebook_page"
+      ],
+      "logic": [
+        {
+          "condition": "site_bon",
+          "proposal": "ajouter IA inbound (filtrage prospects)"
+        },
+        {
+          "condition": "no_site",
+          "proposal": "offrir vitrine + IA"
+        },
+        {
+          "condition": "formulaire_sans_reponse",
+          "proposal": "ajouter IA réactive"
+        }
+      ]
+    },
+    {
+      "id": "b2b_services",
+      "name": "B2B Services",
+      "niches": [
+        "Expert-comptable", "Avocat", "Consultant", "RH", "Agence de communication"
+      ],
+      "needs": [
+        "assistant_tri_prospect", "faq_support", "standard_telephonique"
+      ],
+      "scraping_targets": [
+        "site_web", "cta", "blog", "contacts_visibles"
+      ],
+      "logic": [
+        {
+          "condition": "site_flou",
+          "proposal": "optimiser acquisition avec IA"
+        },
+        {
+          "condition": "surcharge",
+          "proposal": "ajouter IA tri et gestion flux"
+        }
+      ]
+    },
+    {
+      "id": "construction",
+      "name": "Artisans & Construction",
+      "niches": [
+        "Plombier", "Électricien", "Serrurier", "Maçon", "Chauffagiste"
+      ],
+      "needs": [
+        "ia_urgence", "accueil_telephonique"
+      ],
+      "scraping_targets": [
+        "telephone_type", "google_business"
+      ],
+      "logic": [
+        {
+          "condition": "no_site_or_gmb",
+          "proposal": "pack visibilité + IA"
+        },
+        {
+          "condition": "gmb_actif",
+          "proposal": "ajouter IA vocale + lead scoring"
+        }
+      ]
+    }
+  ],
+  "fallback": {
+    "matching_logic": "if niche not found, associate with closest family based on keywords",
+    "scoring_basis": "besoins réels détectés, pas qualité du site"
+  }
+}

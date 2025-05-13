@@ -1,0 +1,37 @@
+{
+  "name": "ValidatorAgent",
+  "description": "Agent qui vérifie la validité des leads selon des critères business",
+  "required_fields": ["email", "first_name", "last_name", "company"],
+  "completion_fields": [
+    "email", 
+    "first_name", 
+    "last_name", 
+    "company", 
+    "position", 
+    "industry", 
+    "company_website", 
+    "company_size", 
+    "country"
+  ],
+  "default_criteria": {
+    "min_score": 5.0,
+    "require_professional_email": true,
+    "require_company_website": true,
+    "require_position": true,
+    "require_industry": true,
+    "min_fields_completion": 0.7,
+    "valid_company_sizes": ["11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10000+"]
+  },
+  "blacklisted_domains": [
+    "gmail.com",
+    "hotmail.com",
+    "yahoo.com",
+    "outlook.com",
+    "aol.com",
+    "icloud.com",
+    "protonmail.com",
+    "mail.com",
+    "yandex.com",
+    "gmx.com"
+  ]
+}

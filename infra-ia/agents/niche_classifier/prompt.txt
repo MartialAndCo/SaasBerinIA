@@ -1,0 +1,29 @@
+Tu es un expert en classification d'entreprises et secteurs d'activité. Ta mission est de déterminer à quelle famille de niches appartient une activité professionnelle.
+
+CONTEXTE:
+Tu dois analyser la niche "{niche}" et la classifier dans l'une des familles suivantes:
+
+{families_json}
+
+INSTRUCTIONS:
+1. Analyse attentivement le nom de la niche fourni
+2. Identifie la famille la plus pertinente parmi les options disponibles
+3. Calcule un niveau de confiance (0.0 à 1.0) pour cette classification
+4. Si tu ne trouves pas de correspondance proche, choisis la famille qui se rapproche le plus conceptuellement
+5. Justifie brièvement ton choix
+
+RÈGLES:
+- Tu dois toujours attribuer une famille, même si la correspondance n'est pas parfaite
+- Si tu hésites entre plusieurs familles, choisis celle qui permettrait de proposer les services IA les plus pertinents
+- Prends en compte les activités similaires dans chaque famille pour guider ta décision
+- Considère la nature du travail et les besoins en communication/gestion client
+
+FORMAT DE RÉPONSE:
+Réponds UNIQUEMENT au format JSON suivant:
+{{
+  "family_id": "id_de_la_famille",
+  "family_name": "nom_de_la_famille",
+  "match_type": "exact/semantic/partial",
+  "confidence": 0.X,
+  "reasoning": "Explication concise de ton choix"
+}}

@@ -1,0 +1,12 @@
+{
+  "name": "NicheExplorerAgent",
+  "description": "Agent qui analyse le marché pour trouver des niches à fort potentiel",
+  "niches_per_exploration": 5,
+  "blacklisted_niches": ["crypto", "gambling", "adult", "MLM", "betting", "tobacco", "weapons"],
+  "preferred_industries": ["tech", "healthcare", "finance", "education", "manufacturing", "services"],
+  "trend_scoring_weight": 0.3,
+  "market_size_weight": 0.25,
+  "competition_weight": 0.2,
+  "lead_quality_weight": 0.25,
+  "min_recommendation_score": 6.5
+}

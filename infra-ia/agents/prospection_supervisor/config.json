@@ -1,0 +1,62 @@
+{
+  "name": "ProspectionSupervisor",
+  "description": "Superviseur des agents de communication avec les leads",
+  "active_campaigns": [
+    {
+      "id": "camp_default",
+      "name": "Campagne par défaut",
+      "niche": "test",
+      "status": "active",
+      "created_at": "2025-05-01T10:00:00",
+      "templates": {
+        "initial": "template_initial",
+        "follow_up_1": "template_follow_up_1",
+        "follow_up_2": "template_follow_up_2",
+        "follow_up_3": "template_follow_up_3",
+        "positive_response": "template_positive_response",
+        "neutral_response": "template_neutral_response"
+      },
+      "scheduling": {
+        "initial_hour": 10,
+        "follow_up_days": [3, 7, 14],
+        "weekends_allowed": false
+      },
+      "stats": {
+        "leads_total": 0,
+        "messages_sent": 0,
+        "responses": 0,
+        "conversions": 0
+      }
+    }
+  ],
+  "messaging_params": {
+    "daily_limit": 100,
+    "batch_size": 20,
+    "time_between_batches_hours": 1,
+    "max_follow_ups": 3,
+    "weekend_messaging": false,
+    "messaging_hours": {
+      "start": 9,
+      "end": 17
+    }
+  },
+  "response_handling": {
+    "auto_interpret": true,
+    "auto_transfer_positive": true,
+    "auto_follow_up_neutral": true,
+    "minimum_response_confidence": 0.7
+  },
+  "crm_integration": {
+    "enabled": false,
+    "crm_type": "none",
+    "api_key": "",
+    "pipeline_id": "",
+    "stage_id": ""
+  },
+  "adaptive_messaging": {
+    "enabled": false,
+    "learning_rate": 0.1,
+    "optimization_interval_days": 14,
+    "min_responses_before_optimization": 20
+  }
+}

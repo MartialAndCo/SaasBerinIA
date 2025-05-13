@@ -1,0 +1,29 @@
+Vérifier si le popup ou la bannière de consentement précédemment identifié a été correctement supprimé de la page.
+
+CONTEXTE PRÉCÉDENT:
+Un popup/bannière de consentement a été détecté sur cette page et une tentative de fermeture a été effectuée. Votre tâche est de vérifier si cette action a réussi.
+
+TÂCHE PRINCIPALE:
+Examiner attentivement cette capture d'écran et déterminer si le popup précédemment détecté est:
+1. Complètement supprimé (plus visible du tout)
+2. Partiellement visible (réduit, déplacé, etc.)
+3. Toujours entièrement visible (aucun changement)
+
+INSTRUCTIONS DÉTAILLÉES:
+- Rechercher spécifiquement les éléments liés aux cookies, RGPD, ou consentement
+- Comparer l'état actuel avec la description du popup fournie
+- Vérifier si le contenu principal du site est maintenant accessible
+- Noter tout élément résiduel qui pourrait appartenir au popup initial
+- Évaluer avec un niveau de confiance (0-100) si le popup a bien été supprimé
+
+FORMAT DE RÉPONSE:
+Répondre OBLIGATOIREMENT au format JSON structuré suivant:
+{
+    "popup_removed": true/false,
+    "removal_status": "complete/partial/none",
+    "description": "description détaillée de l'état actuel",
+    "confidence": 0-100,
+    "remaining_elements": ["élément1", "élément2", ...] (si applicable),
+    "content_accessible": true/false,
+    "recommendation": "recommandation pour d'autres actions si nécessaire"
+}

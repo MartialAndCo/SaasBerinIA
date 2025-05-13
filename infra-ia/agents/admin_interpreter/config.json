@@ -1,0 +1,28 @@
+{
+  "confidence_threshold": 0.75,
+  "max_history_length": 20,
+  "log_level": "INFO",
+  "default_language": "fr",
+  "clarification_required_below": 0.5,
+  "auto_confirmation_above": 0.9,
+  "models": {
+    "interpretation": "gpt-4.1",
+    "generation": "gpt-4.1-mini",
+    "confirmation": "gpt-4.1-nano"
+  },
+  "intent_templates": {
+    "update_config": "Je vais mettre à jour la configuration de {target_agent}, en changeant {key} à {value}.",
+    "execute_agent": "Je vais exécuter l'agent {target_agent} avec les paramètres spécifiés.",
+    "get_system_state": "Je vais récupérer l'état actuel du système.",
+    "orchestrate_workflow": "Je vais lancer le workflow {workflow_name}.",
+    "schedule_task": "Je vais planifier une tâche pour {execution_time}.",
+    "cancel_task": "Je vais annuler la tâche {task_id}."
+  },
+  "help_topics": {
+    "scraping": "Pour scraper des leads, vous pouvez demander : 'Trouve X leads dans la niche Y'",
+    "configuration": "Pour configurer un agent, demandez : 'Modifie [paramètre] de [agent] à [valeur]'",
+    "workflows": "Pour exécuter un workflow, demandez : 'Lance le workflow [nom]'",
+    "scheduling": "Pour planifier une tâche, demandez : 'Planifie [action] pour [date/heure]'",
+    "system": "Pour connaître l'état du système, demandez : 'Montre-moi l'état du système'"
+  }
+}

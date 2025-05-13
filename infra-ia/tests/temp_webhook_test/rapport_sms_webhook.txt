@@ -1,0 +1,47 @@
+# Rapport de diagnostic du webhook SMS BerinIA
+
+## Problèmes identifiés
+
+1. **Structure des agents incorrecte**
+   - Les agents devraient utiliser la structure `agents/responselisteneragent/` (camelCase) 
+   - Notre implementation utilise la structure `agents/response_listener/` (snake_case)
+
+2. **Manque d'agent ResponseInterpreterAgent**
+   - Ce composant est requis par le webhook mais semble manquant
+
+3. **Erreur 500 (Internal Server Error) lors des requêtes**
+   - Le webhook échoue à traiter les requêtes SMS entrantes
+   - L'erreur indique probablement un problème d'instanciation des agents requis
+
+## Causes probables
+
+1. **Différences de convention de nommage**
+   - Le système alterne entre PascalCase (ResponseListenerAgent), camelCase (responselisteneragent) et snake_case (response_listener)
+   - Les imports dans run_webhook.py cherchent probablement une structure différente de celle créée
+
+2. **Agents manquants**
+   - Le webhook s'attend à trouver certains agents qui ne sont pas correctement implémentés
+
+## Solutions recommandées
+
+1. **Respecter la convention de nommage existante**
+   - Observer la structure des agents existants (cleaner, overseer, etc.)
+   - Implémenter les agents response* en suivant la même structure
+
+2. **Ne pas modifier ou remplacer les fichiers existants**
+   - Vérifier l'existence des dossiers et fichiers avant toute modification
+   - Créer des fichiers temporaires pour les tests plutôt que de modifier les fichiers existants
+
+3. **Correction spécifique pour le webhook**
+   - Vérifier l'existence de tous les agents requis dans la structure correcte
+   - Créer les agents manquants tout en respectant la convention camelCase vs snake_case
+
+## Notes importantes
+
+- L'analyse du code montre que le webhook est actif et répond correctement à la racine et à /health
+- La structure du code montre un mélange de conventions de nommage qui peut prêter à confusion
+- Les logs sont fonctionnels mais incomplets, suggérant des erreurs non capturées
+
+### Attention
+
+**Ne pas modifiez pas les fichiers existants**. Pour tester, créez toujours de nouveaux fichiers dans des dossiers temporaires ou de test.

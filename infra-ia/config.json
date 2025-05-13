@@ -1,0 +1,95 @@
+{
+    "system": {
+        "name": "BerinIA",
+        "version": "1.0.0",
+        "language": "fr",
+        "environment": "development",
+        "log_level": "INFO",
+        "debug": true
+    },
+    "db": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "berinia",
+        "user": "berinia_user",
+        "password": "berinia_pass"
+    },
+    "qdrant": {
+        "host": "localhost",
+        "port": 6333,
+        "collections": {
+            "knowledge": {
+                "vector_size": 1536,
+                "distance": "Cosine"
+            },
+            "documents": {
+                "vector_size": 1536,
+                "distance": "Cosine"
+            },
+            "leads": {
+                "vector_size": 1536,
+                "distance": "Cosine"
+            },
+            "templates": {
+                "vector_size": 1536,
+                "distance": "Cosine"
+            }
+        }
+    },
+    "openai": {
+        "api_key": "",
+        "model": "gpt-4.1",
+        "max_tokens": 2000,
+        "temperature": 0.7
+    },
+    "agents": {
+        "overseer": {
+            "active": true,
+            "check_interval_seconds": 5
+        },
+        "scheduler": {
+            "active": true,
+            "check_interval_seconds": 60,
+            "tasks_file": "data/tasks.json"
+        },
+        "response_listener": {
+            "active": true,
+            "check_interval_seconds": 300
+        },
+        "logger": {
+            "active": true,
+            "log_retention_days": 30
+        },
+        "admin_interpreter": {
+            "active": true
+        },
+        "scraping_supervisor": {
+            "active": true,
+            "rate_limit": 10
+        },
+        "qualification_supervisor": {
+            "active": true
+        },
+        "prospection_supervisor": {
+            "active": true
+        },
+        "pivot_strategy": {
+            "active": true
+        },
+        "visual_analyzer": {
+            "active": true,
+            "description": "Agent d'analyse visuelle des sites web",
+            "screenshots_dir": "vision_screenshots",
+            "model": "gpt-4.1",
+            "check_interval_seconds": 300
+        }
+    },
+    "webhooks": {
+        "port": 8000,
+        "secret": "",
+        "endpoints": {
+            "email_reply": "/webhook/email-reply",
+            "system_status": "/webhook/system-status"
+        }
+    }
+}

@@ -1,0 +1,39 @@
+# Logs
+*.log
+*.log.old
+*.tmp
+infra-ia/logs/*
+
+# Bases de données / cache
+*.ldb
+*.sqlite
+*.db
+*.cache
+
+# Python
+__pycache__/
+.venv/
+backend/venv/
+infra-ia/.venv/
+
+# Node.js
+node_modules/
+whatsapp-bot/node_modules/
+frontend/node_modules/
+frontend/.next/
+
+# Auth / Sessions sensibles
+whatsapp-bot/.wwebjs_auth/
+
+# macOS
+.DS_Store
+
+# Autres fichiers inutiles
+*.swp
+*.swo
+*.bak
+*.orig
+
+# Secrets & config sensibles
+.env
+*.env

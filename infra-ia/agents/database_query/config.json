@@ -1,0 +1,25 @@
+{
+    "name": "DatabaseQueryAgent",
+    "description": "Agent spécialisé pour interroger intelligemment la base de données",
+    "version": "1.0.0",
+    "capabilities": [
+        "Traduire les questions en langage naturel en requêtes SQL",
+        "Extraire les statistiques et données demandées par l'utilisateur",
+        "Fournir des réponses formatées et contextuelles",
+        "Assembler des données provenant de différentes tables pour des insights complets"
+    ],
+    "parameters": {
+        "preload_schema": true,
+        "max_results": 100,
+        "use_cache": true,
+        "cache_ttl": 300
+    },
+    "predefined_queries": {
+        "leads_count": "Compte le nombre total de leads",
+        "recent_leads": "Récupère les leads récemment ajoutés",
+        "contacted_leads": "Compte le nombre de leads qui ont été contactés",
+        "active_conversations": "Récupère les conversations actives des derniers jours",
+        "conversion_rate": "Calcule le taux de conversion pour les dernières campagnes",
+        "latest_campaign": "Récupère les détails de la dernière campagne"
+    }
+}
