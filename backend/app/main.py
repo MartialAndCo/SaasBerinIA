@@ -15,8 +15,11 @@ from app.database.session import engine
 
 from dotenv import load_dotenv
 import os
+from app.init_system_settings import init_system_settings
 
-load_dotenv()
+# Charger les variables d'environnement depuis le fichier central infra-ia/.env
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'infra-ia', '.env')
+load_dotenv(env_path)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -64,8 +67,29 @@ def root():
 def list_routes():
     return [{"path": route.path, "name": route.name} for route in app.routes]
 
+@app.get("/debug/env")
+def check_env():
+    return {
+        "TWILIO_SID": os.getenv("TWILIO_SID", "NOT_SET"),
+        "TWILIO_TOKEN": os.getenv("TWILIO_TOKEN", "NOT_SET")[:10] + "..." if os.getenv("TWILIO_TOKEN") else "NOT_SET",
+        "TWILIO_PHONE": os.getenv("TWILIO_PHONE", "NOT_SET"),
+        "env_path": env_path,
+        "env_exists": os.path.exists(env_path)
+    }
+
 # Créer les tables dans la base de données
 Base.metadata.create_all(bind=engine)
+
+# Initialiser les paramètres système
+@app.on_event("startup")
+def startup_event():
+    logger.info("Initialisation des paramètres système au démarrage...")
+    try:
+        init_system_settings()
+        logger.info("Paramètres système initialisés avec succès.")
+    except Exception as e:
+        logger.error(f"Erreur lors de l'initialisation des paramètres système: {str(e)}")
+        logger.error(traceback.format_exc())
 
 if __name__ == "__main__":
     import uvicorn

@@ -56,6 +56,7 @@ logger = setup_logging("webhook")
 
 # Import des gestionnaires de webhook spécifiques
 from webhook.whatsapp_webhook import handle_whatsapp_webhook
+from webhook.instantly_webhook import handle_instantly_webhook
 from twilio.request_validator import RequestValidator
 
 # Création de l'application FastAPI
@@ -216,6 +217,35 @@ async def receive_sms_response(
         
     except Exception as e:
         logger.error(f"Erreur lors du traitement du webhook SMS: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/webhook/instantly")
+async def instantly_webhook(request: Request):
+    """
+    Endpoint pour le webhook Instantly.ai
+    """
+    try:
+        data = await request.json()
+        logger.info("Requête webhook Instantly.ai reçue")
+        
+        # Log des données reçues pour debugging
+        logger.debug(f"Données reçues: {json.dumps(data)}")
+        
+        # Vérifier si c'est un événement Instantly.ai valide
+        if "event_type" not in data:
+            logger.warning("Webhook Instantly.ai invalide: event_type manquant")
+            raise HTTPException(status_code=400, detail="Événement Instantly.ai invalide")
+        
+        # Traitement par le gestionnaire Instantly
+        response = await handle_instantly_webhook(data)
+        
+        logger.info(f"Réponse au webhook Instantly.ai envoyée: {response['status']}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Erreur lors du traitement du webhook Instantly.ai: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))

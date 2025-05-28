@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Float, JSON, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database.base_class import Base
@@ -8,19 +9,28 @@ class AgentLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     agent_id = Column(Integer, ForeignKey("agents.id"))
+    action = Column(String(100), nullable=False)
+    status = Column(String(50), nullable=False)
+    message = Column(Text, nullable=True)
+    details = Column(JSONB, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    operation = Column(String)
-    input_data = Column(JSON, nullable=True)
-    output_data = Column(JSON, nullable=True)
-    status = Column(String)
-    execution_time = Column(Float)
     
-    # Système de feedback intégré
-    feedback_score = Column(Float, nullable=True)  # Note de 0 à 5
-    feedback_text = Column(Text, nullable=True)  # Commentaires explicatifs
-    feedback_source = Column(String, default="auto")  # "auto", "human", "agent"
-    feedback_timestamp = Column(DateTime, nullable=True)
-    feedback_validated = Column(Boolean, default=False)  # Validé par un humain?
+    # Propriétés calculées pour compatibilité
+    @property
+    def operation(self):
+        return self.action
+        
+    @property
+    def input_data(self):
+        return self.details.get('input_data') if self.details else None
+        
+    @property
+    def output_data(self):
+        return self.details.get('output_data') if self.details else None
+        
+    @property
+    def execution_time(self):
+        return self.details.get('execution_time', 0.0) if self.details else 0.0
     
-    # Relations
-    agent = relationship("Agent", back_populates="logs")
+    # Relations - temporairement supprimées pour éviter les erreurs
+    # agent = relationship("Agent", back_populates="logs")

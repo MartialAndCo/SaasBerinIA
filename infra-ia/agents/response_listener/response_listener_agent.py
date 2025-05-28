@@ -10,6 +10,9 @@ from typing import Dict, Any, Optional, List, Union
 from core.agent_base import Agent
 from utils.llm import LLMService
 from utils.logger import get_logger
+from utils.qdrant import create_embedding, create_collection
+from utils.api_clients.instantly_client import InstantlyClient
+from core.db import DatabaseService
 
 class ResponseListenerAgent(Agent):
     """
@@ -42,6 +45,24 @@ class ResponseListenerAgent(Agent):
             "processing_errors": 0,
             "last_activity": None
         }
+        
+        # Initialisation du client Instantly.ai si nécessaire
+        api_key = self.config.get("instantly_api_key") or os.getenv("INSTANTLY_API_KEY", "")
+        if api_key:
+            self.instantly_client = InstantlyClient(api_key=api_key)
+            self.speak("Client Instantly.ai initialisé", target="OverseerAgent")
+        else:
+            self.instantly_client = None
+        
+        # Initialisation de la base de données
+        self.db = DatabaseService()
+        
+        # Initialisation de la collection Qdrant pour les conversations
+        try:
+            create_collection("conversations", vector_size=1536)
+            self.logger.info("Collection 'conversations' initialisée dans Qdrant")
+        except Exception as e:
+            self.logger.warning(f"Erreur lors de l'initialisation de la collection Qdrant: {str(e)}")
     
     def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -88,6 +109,10 @@ class ResponseListenerAgent(Agent):
         Returns:
             Résultat du traitement
         """
+        # Vérifier si c'est un webhook Instantly.ai
+        if "event_type" in data and self.instantly_client:
+            return self._process_instantly_webhook(data)
+        
         self.speak(f"Réception d'une réponse par email de {data.get('sender')}", target="OverseerAgent")
         
         try:
@@ -139,6 +164,14 @@ class ResponseListenerAgent(Agent):
             else:
                 extracted_data = {}
             
+            # Création de l'embedding pour le contenu du message
+            try:
+                message_embedding = create_embedding(body)
+                self.speak(f"Embedding créé pour le message email", target="OverseerAgent")
+            except Exception as e:
+                self.speak(f"Erreur lors de la création de l'embedding: {str(e)}", target="OverseerAgent")
+                message_embedding = None
+            
             # Préparation des données pour le ResponseInterpreterAgent
             processed_data = {
                 "source": "email",
@@ -148,8 +181,18 @@ class ResponseListenerAgent(Agent):
                 "subject": subject,
                 "received_at": data.get("timestamp", datetime.datetime.now().isoformat()),
                 "extracted_data": extracted_data,
-                "raw_data": data
+                "raw_data": data,
+                "embedding": message_embedding
             }
+            
+            # Sauvegarde du message entrant en base de données
+            try:
+                lead_id = self._find_lead_by_email(sender)
+                message_id = self._save_inbound_message_to_db(processed_data, lead_id, "email")
+                processed_data["saved_message_id"] = message_id
+                self.speak(f"Message email sauvegardé en base avec ID: {message_id}", target="OverseerAgent")
+            except Exception as e:
+                self.speak(f"Erreur lors de la sauvegarde du message: {str(e)}", target="OverseerAgent")
             
             # Transmission au ResponseInterpreterAgent
             self.transmit_to_interpreter(processed_data)
@@ -169,6 +212,120 @@ class ResponseListenerAgent(Agent):
             self.speak(error_message, target="OverseerAgent")
             
             self.stats["emails_received"] += 1
+            self.stats["processing_errors"] += 1
+            
+            return {
+                "status": "error",
+                "message": error_message
+            }
+    
+    def _process_instantly_webhook(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Traite un webhook d'Instantly.ai
+        
+        Args:
+            data: Données du webhook Instantly
+            
+        Returns:
+            Résultat du traitement
+        """
+        self.speak(f"Réception d'un webhook Instantly.ai de type {data.get('event_type', 'inconnu')}", target="OverseerAgent")
+        
+        try:
+            # Utiliser le client Instantly pour analyser le webhook
+            webhook_data = self.instantly_client.parse_webhook(data)
+            
+            event_type = webhook_data.get("event_type", "unknown")
+            lead_email = webhook_data.get("lead_email", "")
+            campaign_id = webhook_data.get("campaign_id", "")
+            timestamp = webhook_data.get("timestamp", datetime.datetime.now().isoformat())
+            
+            # Traiter différemment selon le type d'événement
+            if event_type == "reply_received":
+                # Récupérer le contenu de la réponse
+                content = webhook_data.get("content", "")
+                message_id = webhook_data.get("message_id", "")
+                
+                if not content:
+                    self.speak("Webhook reply_received sans contenu", target="OverseerAgent")
+                    self.stats["processing_errors"] += 1
+                    return {
+                        "status": "error",
+                        "message": "Webhook reply_received sans contenu"
+                    }
+                
+                # Création de l'embedding pour le contenu du message
+                try:
+                    message_embedding = create_embedding(content)
+                    self.speak(f"Embedding créé pour la réponse Instantly", target="OverseerAgent")
+                except Exception as e:
+                    self.speak(f"Erreur lors de la création de l'embedding: {str(e)}", target="OverseerAgent")
+                    message_embedding = None
+                
+                # Préparation des données pour le ResponseInterpreterAgent
+                processed_data = {
+                    "source": "email",
+                    "sender": lead_email,
+                    "content": content,
+                    "campaign_id": campaign_id,
+                    "message_id": message_id,  # Pour pouvoir répondre directement via Instantly
+                    "received_at": timestamp,
+                    "raw_data": webhook_data,
+                    "embedding": message_embedding
+                }
+                
+                # Transmission au ResponseInterpreterAgent
+                self.transmit_to_interpreter(processed_data)
+                
+                # Mise à jour des statistiques
+                self.stats["emails_received"] += 1
+                self.stats["processed_successfully"] += 1
+                
+                return {
+                    "status": "success",
+                    "message": "Réponse email Instantly traitée",
+                    "data": processed_data
+                }
+                
+            elif event_type == "email_opened":
+                # Enregistrer l'ouverture d'email mais pas d'action spécifique
+                self.speak(f"Email ouvert par {lead_email} (campagne {campaign_id})", target="OverseerAgent")
+                return {
+                    "status": "success",
+                    "message": "Événement d'ouverture d'email enregistré",
+                    "event_type": event_type,
+                    "lead_email": lead_email,
+                    "campaign_id": campaign_id
+                }
+                
+            elif event_type == "link_clicked":
+                # Enregistrer le clic sur un lien
+                link_url = data.get("link_url", "")
+                self.speak(f"Lien cliqué par {lead_email}: {link_url}", target="OverseerAgent")
+                return {
+                    "status": "success",
+                    "message": "Événement de clic sur lien enregistré",
+                    "event_type": event_type,
+                    "lead_email": lead_email,
+                    "campaign_id": campaign_id,
+                    "link_url": link_url
+                }
+                
+            else:
+                # Autres types d'événements
+                self.speak(f"Événement Instantly.ai de type {event_type} reçu pour {lead_email}", target="OverseerAgent")
+                return {
+                    "status": "success",
+                    "message": f"Événement Instantly.ai {event_type} enregistré",
+                    "event_type": event_type,
+                    "lead_email": lead_email,
+                    "campaign_id": campaign_id
+                }
+                
+        except Exception as e:
+            error_message = f"Erreur lors du traitement du webhook Instantly: {str(e)}"
+            self.speak(error_message, target="OverseerAgent")
+            
             self.stats["processing_errors"] += 1
             
             return {
@@ -243,6 +400,14 @@ class ResponseListenerAgent(Agent):
             else:
                 extracted_data = {}
             
+            # Création de l'embedding pour le contenu du message
+            try:
+                message_embedding = create_embedding(body)
+                self.speak(f"Embedding créé pour le message SMS", target="OverseerAgent")
+            except Exception as e:
+                self.speak(f"Erreur lors de la création de l'embedding: {str(e)}", target="OverseerAgent")
+                message_embedding = None
+            
             # Préparation des données pour le ResponseInterpreterAgent
             processed_data = {
                 "source": "sms",
@@ -251,7 +416,8 @@ class ResponseListenerAgent(Agent):
                 "campaign_id": campaign_id,
                 "received_at": data.get("timestamp", datetime.datetime.now().isoformat()),
                 "extracted_data": extracted_data,
-                "raw_data": data
+                "raw_data": data,
+                "embedding": message_embedding
             }
             
             # Transmission au ResponseInterpreterAgent
@@ -278,6 +444,77 @@ class ResponseListenerAgent(Agent):
                 "status": "error",
                 "message": error_message
             }
+    
+    def _find_lead_by_email(self, email: str) -> Optional[int]:
+        """
+        Trouve l'ID d'un lead par son email
+        
+        Args:
+            email: Adresse email du lead
+            
+        Returns:
+            ID du lead ou None si non trouvé
+        """
+        try:
+            result = self.db.fetch_one(
+                "SELECT id FROM leads WHERE email = :email",
+                {"email": email}
+            )
+            return result["id"] if result else None
+        except Exception as e:
+            self.speak(f"Erreur lors de la recherche du lead: {str(e)}", target="OverseerAgent")
+            return None
+    
+    def _save_inbound_message_to_db(self, processed_data: Dict[str, Any], lead_id: Optional[int], message_type: str) -> str:
+        """
+        Sauvegarde un message entrant en base de données
+        
+        Args:
+            processed_data: Données du message traité
+            lead_id: ID du lead expéditeur
+            message_type: Type de message (email, sms)
+            
+        Returns:
+            ID du message sauvegardé
+        """
+        import uuid
+        
+        message_id = str(uuid.uuid4())
+        
+        try:
+            # Extraction des informations du lead depuis l'email ou le numéro
+            sender = processed_data.get("sender", "")
+            sender_name = sender.split("@")[0] if "@" in sender else sender
+            
+            # Préparation des données du message
+            message_record = {
+                "id": message_id,
+                "lead_id": lead_id,
+                "lead_name": sender_name,
+                "lead_email": sender if "@" in sender else "",
+                "subject": processed_data.get("subject", ""),
+                "content": processed_data.get("content", ""),
+                "status": "received",
+                "campaign_id": processed_data.get("campaign_id"),
+                "campaign_name": f"Campagne {processed_data.get('campaign_id', 'inconnue')}",
+                "sent_date": None,  # Pas de date d'envoi pour les messages entrants
+                "received_date": processed_data.get("received_at", datetime.datetime.now().isoformat()),
+                "direction": "inbound",
+                "sender_type": "lead",
+                "thread_id": str(lead_id) if lead_id else sender,
+                "message_type": message_type,
+                "sender_name": sender_name,
+                "message_id_external": processed_data.get("message_id", "")
+            }
+            
+            # Insertion en base de données
+            self.db.insert("messages", message_record)
+            
+            return message_id
+            
+        except Exception as e:
+            self.speak(f"Erreur lors de la sauvegarde du message: {str(e)}", target="OverseerAgent")
+            return message_id  # Retourner l'ID généré même en cas d'erreur
     
     def transmit_to_interpreter(self, processed_data: Dict[str, Any]) -> None:
         """

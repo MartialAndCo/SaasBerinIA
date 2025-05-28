@@ -1,0 +1,78 @@
+{
+  "name": "ConversationAgent",
+  "version": "2.0",
+  "description": "Agent conversationnel autonome et intelligent pour BerinIA",
+  "author": "BerinIA Team",
+  "created": "2025-05-27",
+  
+  "settings": {
+    "max_history_length": 10,
+    "quick_response_enabled": true,
+    "llm_complexity_default": "high",
+    "memory_threshold": 0.8,
+    "enable_learning": true,
+    "enable_direct_database": true,
+    "enable_agent_delegation": true,
+    "enable_overseer_calls": true
+  },
+  
+  "capabilities": [
+    "natural_language_understanding",
+    "direct_database_access",
+    "agent_delegation",
+    "overseer_orchestration",
+    "conversation_history",
+    "learning_from_interactions",
+    "quick_responses",
+    "context_enrichment"
+  ],
+  
+  "supported_languages": ["fr", "en"],
+  
+  "agent_patterns": {
+    "DatabaseQueryAgent": ["database", "bdd", "sql", "base de données", "données", "requête"],
+    "ScraperAgent": ["scraper", "scraping", "extraction", "trouve", "leads"],
+    "MessagingAgent": ["message", "email", "sms", "envoie", "communication"],
+    "NicheClassifierAgent": ["niche", "classification", "catégorie"],
+    "OverseerAgent": ["complexe", "orchestration", "coordination"]
+  },
+  
+  "quick_patterns": {
+    "greeting": ["salut", "bonjour", "hello", "coucou", "hey"],
+    "thanks": ["merci", "thanks", "thank you", "remercie"],
+    "help": ["aide", "help", "comment", "que peux-tu faire", "assistance"]
+  },
+  
+  "sql_patterns": {
+    "count_leads": {
+      "keywords": ["combien", "leads"],
+      "template": "SELECT COUNT(*) FROM leads"
+    },
+    "count_contacted_leads": {
+      "keywords": ["combien", "leads", "contacté"],
+      "template": "SELECT COUNT(*) FROM leads WHERE contacted = true"
+    },
+    "statistics": {
+      "keywords": ["statistiques", "stats"],
+      "template": "SELECT COUNT(*) as total_leads, COUNT(CASE WHEN contacted = true THEN 1 END) as contacted_leads, COUNT(CASE WHEN responded = true THEN 1 END) as responded_leads FROM leads"
+    },
+    "recent_leads": {
+      "keywords": ["récent", "leads"],
+      "template": "SELECT * FROM leads ORDER BY created_at DESC LIMIT 10"
+    }
+  },
+  
+  "fallback_strategy": {
+    "database_keywords": ["combien", "statistiques", "stats", "nombre", "count"],
+    "scraper_keywords": ["scrape", "trouve", "leads", "extraction"],
+    "messaging_keywords": ["message", "email", "sms", "envoie"],
+    "default_agent": "OverseerAgent"
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "log_interactions": true,
+    "log_llm_calls": true,
+    "log_agent_delegations": true
+  }
+}

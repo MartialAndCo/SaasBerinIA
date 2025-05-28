@@ -1,24 +1,63 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  // Vérifier si l'utilisateur accède à une route admin
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    // Vérifier si l'utilisateur est authentifié via le cookie
-    const isAuthenticated = request.cookies.get('auth0.is.authenticated')?.value === 'true';
-    
-    if (!isAuthenticated) {
-      // Rediriger vers la page d'accueil avec le paramètre returnTo
-      const url = new URL('/', request.url);
-      url.searchParams.set('returnTo', request.nextUrl.pathname);
-      return NextResponse.redirect(url);
+// Configuration pour logger les détails des requêtes en développement
+const DEBUG = process.env.NODE_ENV !== 'production';
+
+/**
+ * Middleware pour rediriger les routes API vers le backend
+ * et forcer l'utilisation de IPv4
+ */
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Logger pour le débogage
+  if (DEBUG) {
+    console.log(`[Middleware] Traitement de la requête: ${request.method} ${pathname}`);
+  }
+  
+  // Gestion manuelle de la route API des services
+  if (pathname === '/api/system/services' && request.method === 'GET') {
+    try {
+      console.log('[Middleware] Redirection vers le backend API pour services...');
+      
+      // Appel direct au backend avec IPv4 explicitement
+      const backendResponse = await fetch('http://127.0.0.1:8000/api/system/services', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      // Récupérer le contenu JSON
+      const data = await backendResponse.json();
+      console.log('[Middleware] Réponse du backend:', data);
+      
+      // Créer une nouvelle réponse avec les données du backend
+      return NextResponse.json(data);
+    } catch (error) {
+      console.error('[Middleware] Erreur lors de la redirection vers le backend:', error);
+      return NextResponse.json(
+        { 
+          status: 'error', 
+          message: 'Erreur lors de la connexion au backend',
+          details: error instanceof Error ? error.message : 'Erreur inconnue' 
+        },
+        { status: 500 }
+      );
     }
   }
   
-  return NextResponse.next()
+  // Continuer avec la requête normale pour les autres chemins
+  return NextResponse.next();
 }
 
-// Configurer les chemins sur lesquels le middleware doit s'exécuter
+// Configurer le matcher pour cibler seulement les routes API qui nous intéressent
 export const config = {
-  matcher: ['/admin/:path*'],
-} 
+  matcher: [
+    '/api/system/services',
+    '/api/system/integrations',
+    '/api/system/scheduling',
+    '/api/system/service-control',
+  ],
+};

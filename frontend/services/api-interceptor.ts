@@ -1,6 +1,13 @@
 import axios from 'axios'
 import { API_BASE_URL } from '@/src/config' // config.js bien pris en charge même si importé en .ts
 
+// Déclaration TypeScript pour étendre Window
+declare global {
+  interface Window {
+    auth0Client?: any;
+  }
+}
+
 // ✅ Instance axios avec baseURL corrigée
 export const api = axios.create({
   baseURL: API_BASE_URL, // doit être https://app.berinia.com/api
@@ -56,9 +63,28 @@ api.interceptors.response.use(
 )
 
 // ✅ Utilitaire de requête (Axios uniquement)
-export const apiRequest = async (url: string, options = {}) => {
+export const apiRequest = async (url: string, options: any = {}) => {
   try {
-    const response = await api.get(url, options);
+    const { method = 'GET', ...config } = options;
+    
+    let response;
+    switch (method.toUpperCase()) {
+      case 'POST':
+        response = await api.post(url, config.body ? JSON.parse(config.body) : config.data, config);
+        break;
+      case 'PUT':
+        response = await api.put(url, config.body ? JSON.parse(config.body) : config.data, config);
+        break;
+      case 'DELETE':
+        response = await api.delete(url, config);
+        break;
+      case 'PATCH':
+        response = await api.patch(url, config.body ? JSON.parse(config.body) : config.data, config);
+        break;
+      default:
+        response = await api.get(url, config);
+    }
+    
     return response.data;
   } catch (error) {
     console.error(`API request error for ${url}:`, error);

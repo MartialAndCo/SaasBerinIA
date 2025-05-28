@@ -32,12 +32,28 @@ AGENT_DEFINITIONS = [
         "config_path": "agents/overseer/config.json"
     },
     {
+        "name": "ConversationAgent",
+        "module_path": "agents.conversation.conversation_agent",
+        "class_name": "ConversationAgent",
+        "category": "core",
+        "description": "Agent conversationnel autonome et intelligent 2.0",
+        "config_path": "agents/conversation/config.json"
+    },
+    {
         "name": "AdminInterpreterAgent",
         "module_path": "agents.admin_interpreter.admin_interpreter_agent",
         "class_name": "AdminInterpreterAgent",
         "category": "core",
-        "description": "Interface en langage naturel pour l'administrateur",
+        "description": "Interface en langage naturel pour l'administrateur (legacy)",
         "config_path": "agents/admin_interpreter/config.json"
+    },
+    {
+        "name": "TaskWatchdogAgent",
+        "module_path": "agents.task_watchdog.task_watchdog_agent",
+        "class_name": "TaskWatchdogAgent",
+        "category": "core",
+        "description": "Surveillant de sécurité des tâches planifiées",
+        "config_path": "agents/task_watchdog/config.json"
     },
     
     # Superviseurs
@@ -200,7 +216,7 @@ AGENT_DEFINITIONS = [
         "module_path": "agents.meta.meta_agent",
         "class_name": "MetaAgent",
         "category": "intelligence",
-        "description": "Intelligence conversationnelle du système",
+        "description": "Intelligence conversationnelle du système (legacy)",
         "config_path": "agents/meta/config.json"
     },
     {
@@ -279,16 +295,15 @@ def get_all_agent_names() -> List[str]:
     """
     return ALL_AGENT_NAMES
 
-# Liste d'agents requis par le webhook (maintenue pour compatibilité)
-# Note: Cette liste n'est plus utilisée directement, mais est conservée pour référence
+# Liste d'agents requis par le webhook (mise à jour avec ConversationAgent)
+# Note: ConversationAgent remplace MetaAgent et AdminInterpreterAgent
 WEBHOOK_REQUIRED_AGENTS = [
     "LoggerAgent",
     "OverseerAgent",
     "ResponseListenerAgent",
     "ResponseInterpreterAgent",
-    "AdminInterpreterAgent",
+    "ConversationAgent",  # Nouveau agent principal
     "MessagingAgent",
     "PivotStrategyAgent",
-    "MetaAgent",
     "DatabaseQueryAgent"
 ]

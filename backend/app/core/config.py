@@ -28,7 +28,7 @@ class Settings:
     ]
     
     # Configuration de la base de données
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://berinia_user:tonMotDePasse@localhost/berinia")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://berinia_user:berinia_pass@localhost/berinia")
     
     # Configuration JWT
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "UneCleSecreteIncassable987654321")

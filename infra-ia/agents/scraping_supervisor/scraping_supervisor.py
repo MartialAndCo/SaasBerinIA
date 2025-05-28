@@ -87,6 +87,7 @@ class ScrapingSupervisor(Agent):
         
         # Ajout d'informations au contexte
         context = {
+            "action": "scrape",
             **input_data,
             "limit": limit,
             "source": source

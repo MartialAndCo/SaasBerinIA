@@ -1,198 +1,81 @@
-# 🧠 BerinIA - Écosystème d'Agents Intelligents
+# 📚 Documentation de BerinIA
 
-BerinIA est un système d'agents autonomes collaboratifs, orchestrés par une logique centrale intelligente, conçu pour:
+Bienvenue dans la documentation du système BerinIA, un écosystème d'agents IA autonomes et collaboratifs pour l'automatisation de la prospection commerciale.
 
-- Scraper des leads qualifiés dans des niches précises
-- Nettoyer, valider et scorer ces leads
-- Envoyer des messages personnalisés en cold outreach (email et SMS)
-- Relancer automatiquement selon des scénarios dynamiques
-- Analyser les réponses reçues
-- Apprendre et optimiser ses performances
-- Réagir en temps réel aux événements (réponses)
+## 🗂️ Structure de la documentation
 
-## 🎯 Philosophie du système
+La documentation est organisée en sections thématiques pour faciliter la navigation :
 
-Le système BerinIA repose sur plusieurs principes clés:
+### 📊 Vue d'ensemble du système
+- [Synthèse complète du système BerinIA](./résumé/synthèse_système_BerinIA.md) - Vue globale du système et de ses composants
 
-- **Centralisation intelligente**: L'OverseerAgent supervise et oriente tous les agents du système
-- **Modularité**: Chaque agent a un rôle clair, autonome et réutilisable
-- **Communication en langage naturel**: Interaction avec l'admin en langage libre
-- **Réactivité temps réel**: Traitement immédiat des réponses (emails, SMS)
-- **Adaptation continue**: Apprentissage et optimisation des performances
-- **Traçabilité complète**: Historisation de toutes les actions et décisions
+### 🏗️ Architecture
+- [Architecture du système](./architecture/ARCHITECTURE.md) - Documentation technique détaillée
+- [Vue d'ensemble](./architecture/overview.md) - Aperçu simplifié
+- [Système d'agents](./architecture/agents-system.md) - Architecture des agents IA
+- [Communication](./architecture/communication.md) - Flux de communication entre composants
 
-## 🔧 Prérequis
+### 🔌 Intégrations
+- [Base de données](./integrations/database.md) - Connexion et structure de la base de données
+- [Twilio (SMS)](./integrations/sms-twilio.md) - Intégration des SMS via Twilio
+- [WhatsApp](./integrations/whatsapp.md) - Intégration de WhatsApp
+- [Instantly.ai](./integrations/instantly.md) - Intégration pour l'envoi d'emails
 
-- Python 3.8 ou supérieur
-- Une clé API OpenAI (pour GPT-4.1, GPT-4.1-mini et GPT-4.1-nano)
-- Optionnel: Comptes Mailgun et Twilio pour les fonctionnalités d'envoi d'emails et SMS
+### ⚙️ Services et déploiement
+- [Services Systemd](./services/systemd_services.md) - Gestion des services système
+- [API](./api.md) - Documentation de l'API BerinIA
+- [Variables d'environnement](./services/env_variables_api.md) - Gestion des variables d'environnement
 
-## 📦 Installation
+### 📘 Guides
+- [Guide d'utilisation API pour l'IA](./api_usage_guide_for_ai.md) - Guide pour l'utilisation de l'API par l'IA
 
-1. Clonez ce dépôt:
-   ```bash
-   git clone https://github.com/berinai/berinia.git
-   cd berinia/infra-ia
-   ```
+## 🚀 Installation et démarrage
 
-2. Créez et activez un environnement virtuel Python:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # Pour Linux/Mac
-   # OU
-   .venv\Scripts\activate  # Pour Windows
-   ```
+Pour installer et démarrer le système BerinIA, veuillez consulter :
 
-3. Installez les dépendances:
-   ```bash
-   pip install -r requirements.txt
-   ```
+1. [Vue d'ensemble](./architecture/overview.md) - Pour comprendre l'architecture
+2. [Services Systemd](./services/systemd_services.md) - Pour le déploiement des services
 
-4. Créez un fichier `.env` avec vos clés API:
-   ```
-   OPENAI_API_KEY=sk-...
-   
-   # Optionnel - Qdrant pour la mémoire vectorielle
-   QDRANT_URL=http://localhost:6333
-   
-   # Optionnel - Mailgun pour les emails
-   MAILGUN_API_KEY=...
-   MAILGUN_DOMAIN=...
-   
-   # Optionnel - Twilio pour les SMS
-   TWILIO_SID=...
-   TWILIO_TOKEN=...
-   TWILIO_PHONE=+33...
-   ```
+## 🔄 Utilisation quotidienne
 
-5. Vérifiez votre installation:
-   ```bash
-   python verify_installation.py
-   # Pour une vérification complète (test de l'API OpenAI):
-   python verify_installation.py --full
-   ```
+Pour l'utilisation quotidienne du système :
 
-## 🚀 Démarrage du système
+1. Démarrez les services dans l'ordre recommandé (voir [Services Systemd](./services/systemd_services.md))
+2. Utilisez l'interface en langage naturel (`python interact.py`)
+3. Consultez les logs via l'API ou directement avec journalctl
 
-### Interface de ligne de commande
+## 📋 Administration système
 
-```bash
-python interact.py
-```
+Pour les tâches d'administration :
 
-Cette commande démarre l'interface interactive où vous pouvez communiquer avec le système en langage naturel.
+1. Utilisez les endpoints API pour gérer les services (`/api/services/`)
+2. Configurez les intégrations externes via les endpoints dédiés
+3. Vérifiez régulièrement les logs pour détecter d'éventuels problèmes
 
-### Serveur de webhooks (réception des réponses)
+## 🔧 Dépannage
 
-```bash
-python webhook/run_webhook.py
-```
+En cas de problème :
 
-Ce serveur écoute les notifications de réponses (emails, SMS) et les transmet aux agents appropriés.
+1. Vérifiez les logs des services concernés
+2. Assurez-vous que toutes les dépendances sont actives
+3. Vérifiez la connectivité à la base de données
+4. Consultez l'état des services systemd
 
-## 📊 Structure du projet
+## 👨‍💻 Développement et extension
 
-```
-berinia/
-├── infra-ia/
-│   ├── agents/                 # Tous les agents du système
-│   │   ├── admin_interpreter/  # Interprète les commandes admin
-│   │   ├── cleaner/            # Nettoie les données
-│   │   ├── duplicate_checker/  # Vérifie les doublons
-│   │   ├── follow_up/          # Gère les relances
-│   │   ├── logger/             # Enregistre les interactions
-│   │   ├── messaging/          # Envoie les messages
-│   │   ├── niche_explorer/     # Explore les niches
-│   │   ├── niche_classifier/   # Classe et personnalise les approches par niches
-│   │   ├── overseer/           # Supervise le système
-│   │   ├── pivot_strategy/     # Analyse les performances
-│   │   ├── prospection_supervisor/ # Supervise la prospection
-│   │   ├── qualification_supervisor/ # Supervise la qualification
-│   │   ├── response_interpreter/ # Interprète les réponses
-│   │   ├── scheduler/          # Planifie les tâches
-│   │   ├── scorer/             # Score les leads
-│   │   ├── scraper/            # Extrait les leads
-│   │   ├── scraping_supervisor/ # Supervise le scraping
-│   │   ├── validator/          # Valide les données
-│   │   └── visual_analyzer/    # Analyse visuelle et détection de maturité des sites web
-│   │
-│   ├── core/                   # Modules centraux
-│   │   ├── agent_base.py       # Classe de base des agents
-│   │   └── db.py               # Interface avec la base de données
-│   │
-│   ├── utils/                  # Utilitaires
-│   │   ├── llm.py              # Service d'accès aux LLM
-│   │   └── qdrant.py           # Service d'accès à Qdrant
-│   │
-│   ├── webhook/                # Serveur de webhooks
-│   │   └── run_webhook.py      # Serveur FastAPI
-│   │
-│   ├── init_system.py          # Script d'initialisation
-│   ├── interact.py             # Interface CLI
-│   ├── verify_installation.py  # Vérification de l'installation
-│   ├── setup_venv.sh           # Script de configuration de l'environnement
-│   └── requirements.txt        # Dépendances Python
-```
+Pour le développement et l'extension du système :
 
-## 🔄 Fonctionnement global
+1. Consultez l'architecture des agents pour comprendre le fonctionnement interne
+2. Suivez le modèle existant pour créer de nouveaux agents
+3. Utilisez les outils de test inclus pour valider vos modifications
 
-1. L'OverseerAgent initialise et orchestre tous les agents
-2. L'AdminInterpreterAgent reçoit vos instructions en langage naturel
-3. L'AdminInterpreterAgent les traduit en actions structurées pour l'OverseerAgent
-4. L'OverseerAgent décide quels agents doivent intervenir et comment
-5. Les agents effectuent leurs tâches spécifiques et renvoient les résultats
-6. Le VisualAnalyzerAgent et le NicheClassifierAgent peuvent enrichir les leads avec des analyses visuelles et des approches personnalisées par secteur
-7. L'OverseerAgent transmet la réponse finale à l'admin
+## 📅 Historique des mises à jour
 
-## 🌟 Exemple d'utilisation
+- **Mai 2025** : Ajout de l'intégration Instantly.ai et des services systemd
+- **Avril 2025** : Amélioration de l'analyse visuelle et de la classification de niches
+- **Mars 2025** : Intégration WhatsApp et système de logs unifié
+- **Février 2025** : Version initiale
 
-```
->>> Explore la niche des consultants en cybersécurité
+## 📞 Support
 
-[NicheExplorerAgent] Je vais explorer cette niche...
-
->>> Récupère 50 leads dans cette niche
-
-[ScraperAgent] Je vais chercher 50 leads...
-[CleanerAgent] Je nettoie les données...
-[Score] Les leads ont été analysés et scorés...
-
->>> Prépare une campagne d'emails avec comme sujet "Sécurisez votre entreprise"
-
-[MessagingAgent] Campagne préparée...
-
->>> Envoie cette campagne aux 20 meilleurs leads
-
-[MessagingAgent] Emails envoyés à 20 leads...
-
->>> Planifie une relance dans 3 jours
-
-[SchedulerAgent] Relance programmée pour le 2025-05-06 à 10h00...
-```
-
-## 📊 Architecture technique des agents
-
-Chaque agent est construit sur le même modèle:
-
-```
-agents/agent_name/
-├── agent_name.py     # Code principal de l'agent
-├── config.json       # Configuration de l'agent
-└── prompt.txt        # Prompt spécifique pour le LLM
-```
-
-L'architecture à base de prompts permet une grande flexibilité et réutilisabilité.
-
-## 📝 Ressources supplémentaires
-
-Pour plus d'informations sur chaque agent, consultez la documentation spécifique dans leurs dossiers respectifs.
-
-## 🔒 Sécurité
-
-- Ne partagez jamais vos clés API
-- Stockez-les uniquement dans le fichier `.env` (non commité)
-- Pour la production, utilisez des vérifications de signature sur les webhooks
-
-## 📄 Licence
-
-Copyright © 2025 BerinIA - Tous droits réservés
+Pour obtenir de l'aide ou signaler des problèmes, contactez l'équipe technique via le groupe WhatsApp dédié.

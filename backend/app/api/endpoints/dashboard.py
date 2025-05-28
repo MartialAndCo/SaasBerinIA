@@ -12,23 +12,23 @@ router = APIRouter()
 
 @router.get("/metrics")
 def get_dashboard_metrics(db: Session = Depends(deps.get_db)):
-    # Calcul des leads
+    # Calcul des leads - utiliser les vraies colonnes SQL
     total_leads = db.query(func.count(Lead.id)).scalar() or 0
-    leads_today = db.query(func.count(Lead.id)).filter(func.date(Lead.date_creation) == datetime.utcnow().date()).scalar() or 0
+    leads_today = db.query(func.count(Lead.id)).filter(func.date(Lead.created_at) == datetime.utcnow().date()).scalar() or 0
 
-    # Calcul des campagnes
+    # Calcul des campagnes - utiliser les vraies colonnes SQL
     total_campaigns = db.query(func.count(Campaign.id)).scalar() or 0
-    active_campaigns = db.query(func.count(Campaign.id)).filter(Campaign.statut == "active").scalar() or 0
+    active_campaigns = db.query(func.count(Campaign.id)).filter(Campaign.status == "active").scalar() or 0
     pending_campaigns = total_campaigns - active_campaigns
 
-    # Calcul des niches
+    # Calcul des niches - utiliser les vraies colonnes SQL
     total_niches = db.query(func.count(Niche.id)).scalar() or 0
-    profitable_niches = db.query(func.count(Niche.id)).filter(Niche.statut == "Rentable").scalar() or 0
+    profitable_niches = db.query(func.count(Niche.id)).filter(Niche.status == "active").scalar() or 0
 
-    # Calcul des agents
+    # Calcul des agents - utiliser les vraies colonnes SQL
     total_agents = db.query(func.count(Agent.id)).scalar() if db.query(Agent.id).first() else 0
-    active_agents = db.query(func.count(Agent.id)).filter(Agent.statut == "active").scalar() if total_agents else 0
-    error_agents = db.query(func.count(Agent.id)).filter(Agent.statut == "error").scalar() if total_agents else 0
+    active_agents = db.query(func.count(Agent.id)).filter(Agent.status == "active").scalar() if total_agents else 0
+    error_agents = db.query(func.count(Agent.id)).filter(Agent.status == "error").scalar() if total_agents else 0
 
     return {
         "leads": {

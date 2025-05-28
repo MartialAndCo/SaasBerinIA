@@ -4,11 +4,12 @@
   "daily_limit": 100,
   "batch_size": 20,
   "time_between_batches": 60,
-  "test_mode": false,
+  "test_mode": true,
   "email": {
-    "service": "mailgun",
-    "from_email": "contact@berinia.com"
- },
+    "service": "instantly",
+    "from_email": "contact@berinia.com",
+    "instantly_api_key": ""
+  },
   "sms": {
     "service": "twilio",
     "from_number": "+33757594999"

@@ -84,12 +84,20 @@
             "check_interval_seconds": 300
         }
     },
-    "webhooks": {
-        "port": 8000,
+    "webhook": {
+        "host": "127.0.0.1",
+        "port": 8001,
         "secret": "",
         "endpoints": {
             "email_reply": "/webhook/email-reply",
             "system_status": "/webhook/system-status"
         }
+    }
+    ,
+    "monitoring": {
+        "enabled": true,
+        "check_interval_seconds": 30,
+        "health_check_interval_minutes": 5,
+        "log_errors": true
     }
 }

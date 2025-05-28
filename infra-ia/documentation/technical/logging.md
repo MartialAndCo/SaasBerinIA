@@ -1,8 +1,37 @@
-# Système de Logs Unifié
+# Système de Logs Unifié - OBSOLÈTE
 
-*Dernière mise à jour: 8 mai 2025*
+*Dernière mise à jour: 8 mai 2025*  
+**⚠️ ATTENTION : Cette documentation est obsolète depuis le 26 mai 2025**
 
-## Sommaire
+## 🚨 MIGRATION VERS POSTGRESQL EFFECTUÉE
+
+**Ce système a été entièrement remplacé par une architecture PostgreSQL moderne.**
+
+### 📄 Nouvelle Documentation
+**Consultez le nouveau document complet :**
+[**Migration du Système de Logs vers PostgreSQL**](migration_logs_postgresql_mai_2025.md)
+
+### 🔄 Ce qui a changé
+- ❌ **Ancien** : Logs uniquement dans des fichiers (rotation défaillante)
+- ✅ **Nouveau** : PostgreSQL + interface web + rotation fonctionnelle
+
+### 🌐 Nouvelle Interface
+- **Page web** : `https://app.berinia.com/admin/logs`
+- **Fonctionnalités** : Recherche, filtres, pagination, statistiques temps réel
+- **Plus de SSH** : Accessible partout via navigateur
+
+### 📊 Nouvelle API
+```bash
+# Statistiques en temps réel
+curl https://app.berinia.com/api/system-logs/stats
+
+# Récupérer les logs avec filtres
+curl "https://app.berinia.com/api/system-logs/?level=ERROR&source=agent"
+```
+
+---
+
+## Sommaire (Ancien Système - OBSOLÈTE)
 - [Vue d'ensemble](#vue-densemble)
 - [Structure des logs](#structure-des-logs)
 - [Utilisation du système de logs](#utilisation-du-système-de-logs)
@@ -252,4 +281,4 @@ Les messages sont stylisés par agent et filtrables par :
 
 ---
 
-[Retour à l'accueil](../index.md) | [Configuration des webhooks →](webhooks.md)
+[Retour à l'accueil](../index.md) | [**Nouvelle Documentation PostgreSQL →**](migration_logs_postgresql_mai_2025.md)

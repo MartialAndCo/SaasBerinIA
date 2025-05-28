@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Download, Filter, MoreHorizontal, Search, Send } from "lucide-react"
+import { Download, Filter, MoreHorizontal, Search, Send, Eye, Star, MapPin, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -16,19 +16,60 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { apiRequest } from "@/services/api-interceptor"
 import { toast } from "@/components/ui/use-toast"
 
-// Type pour les leads
+// Type pour les leads adaptés aux vraies données du backend
 interface Lead {
   id: number
-  nom: string
+  first_name?: string
+  last_name?: string
   email: string
-  telephone: string
-  entreprise: string
-  statut: string
-  date_creation: string
-  campagne_id: number
+  phone?: string
+  company?: string
+  position?: string
+  linkedin_url?: string
+  website?: string
+  entreprise?: string
+  industry?: string
+  niche_id?: number
+  source?: string
+  status: string
+  score?: number
+  score_details?: any
+  validation_status: string
+  last_contact?: string
+  notes?: string
+  created_at: string
+  updated_at?: string
+  
+  // Champs d'analyse visuelle
+  visual_score?: number
+  visual_analysis_data?: any
+  has_popup?: boolean
+  popup_removed?: boolean
+  screenshot_path?: string
+  enhanced_screenshot_path?: string
+  visual_analysis_date?: string
+  site_type?: string
+  visual_quality?: number
+  website_maturity?: string
+  design_strengths?: string[]
+  design_weaknesses?: string[]
+  
+  // Relations
+  campagne_id?: number
+}
+
+// Interface pour les filtres
+interface LeadFilters {
+  status?: string
+  validation_status?: string
+  min_score?: number
+  has_visual_analysis?: boolean
+  website_maturity?: string
+  campagne_id?: number
 }
 
 export default function LeadsPage() {
@@ -39,13 +80,16 @@ export default function LeadsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedLeads, setSelectedLeads] = useState<number[]>([])
   const [selectAll, setSelectAll] = useState(false)
+  const [filters, setFilters] = useState<LeadFilters>({})
+  const [activeTab, setActiveTab] = useState("all")
 
   // Récupérer les leads depuis l'API
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         setLoading(true)
-        const response = await apiRequest('/leads')
+        const response = await apiRequest('/api/leads/')
+        console.log('Leads reçus depuis l\'API:', response) // Debug pour voir la vraie structure
         setLeads(response)
         setFilteredLeads(response)
         setError(null)
@@ -60,19 +104,55 @@ export default function LeadsPage() {
     fetchLeads()
   }, [])
 
-  // Filtrer les leads en fonction de la recherche
+  // Filtrer les leads en fonction de la recherche et des filtres
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredLeads(leads)
-    } else {
-      const filtered = leads.filter(lead => 
-        lead.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.entreprise.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      setFilteredLeads(filtered)
+    let filtered = leads;
+
+    // Filtrer par onglet actif
+    if (activeTab !== "all") {
+      filtered = filtered.filter(lead => {
+        if (activeTab === "new") return lead.status === "new";
+        if (activeTab === "qualified") return lead.status === "qualified";
+        if (activeTab === "contacted") return lead.status === "contacted";
+        if (activeTab === "converted") return lead.status === "converted";
+        if (activeTab === "visual") return lead.visual_score !== undefined && lead.visual_score !== null;
+        return true;
+      });
     }
-  }, [leads, searchQuery])
+    
+    // Filtrer par recherche
+    if (searchQuery.trim() !== "") {
+      filtered = filtered.filter(lead => 
+        (lead.first_name && lead.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (lead.last_name && lead.last_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (lead.company && lead.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (lead.entreprise && lead.entreprise.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    }
+
+    // Appliquer les filtres avancés
+    if (filters.status) {
+      filtered = filtered.filter(lead => lead.status === filters.status);
+    }
+    if (filters.validation_status) {
+      filtered = filtered.filter(lead => lead.validation_status === filters.validation_status);
+    }
+    if (filters.min_score !== undefined) {
+      filtered = filtered.filter(lead => (lead.score || 0) >= filters.min_score!);
+    }
+    if (filters.has_visual_analysis) {
+      filtered = filtered.filter(lead => lead.visual_score !== undefined && lead.visual_score !== null);
+    }
+    if (filters.website_maturity) {
+      filtered = filtered.filter(lead => lead.website_maturity === filters.website_maturity);
+    }
+    if (filters.campagne_id) {
+      filtered = filtered.filter(lead => lead.campagne_id === filters.campagne_id);
+    }
+
+    setFilteredLeads(filtered)
+  }, [leads, searchQuery, filters, activeTab])
 
   // Gérer la sélection de tous les leads
   useEffect(() => {
@@ -97,11 +177,38 @@ export default function LeadsPage() {
     }
   }
 
+  // Actualiser les leads
+  const refreshLeads = async () => {
+    try {
+      setLoading(true)
+      const response = await apiRequest('/api/leads/')
+      setLeads(response)
+      setFilteredLeads(response)
+      setError(null)
+      
+      toast({
+        title: "Leads actualisés",
+        description: "La liste des leads a été actualisée avec succès.",
+      })
+    } catch (err) {
+      console.error("Error refreshing leads:", err)
+      setError("Unable to refresh leads")
+      
+      toast({
+        title: "Erreur",
+        description: "Impossible d'actualiser les leads",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Gérer l'export CSV
   const handleExportCSV = async () => {
     try {
       const ids = selectedLeads.length > 0 ? selectedLeads : filteredLeads.map(lead => lead.id)
-      await apiRequest(`/api/leads/export/csv?ids=${ids.join(',')}`, {
+      await apiRequest(`/api/leads/export?ids=${ids.join(',')}&format=csv`, {
         method: 'GET',
       })
       
@@ -119,84 +226,15 @@ export default function LeadsPage() {
     }
   }
 
-  // Gérer l'envoi vers GHL
-  const handleSendToGHL = async () => {
-    try {
-      const ids = selectedLeads.length > 0 ? selectedLeads : filteredLeads.map(lead => lead.id)
-      await apiRequest(`/api/leads/sync-ghl`, {
-        method: 'POST',
-        body: JSON.stringify({ ids }),
-      })
-      
-      toast({
-        title: "Envoi vers GHL",
-        description: "Les leads ont été envoyés avec succès vers GHL.",
-      })
-    } catch (error) {
-      console.error("Error sending leads to GHL:", error)
-      toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer les leads vers GHL",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // Dans la fonction handleCreateNewLead
-  const handleCreateNewLead = async () => {
-    try {
-      const leadData = {
-        nom: newLeadForm.name,
-        email: newLeadForm.email,
-        telephone: newLeadForm.phone,
-        entreprise: newLeadForm.company,
-        campagne_id: parseInt(newLeadForm.campaignId),
-      }
-      
-      const response = await apiRequest('/leads', {
-        method: 'POST',
-        body: JSON.stringify(leadData),
-      })
-      
-      setLeads([...leads, response])
-      
-      toast({
-        title: "Lead créé",
-        description: `Le lead "${newLeadForm.name}" a été créé avec succès.`,
-      })
-      
-      // Réinitialiser le formulaire
-      setNewLeadForm({
-        name: "",
-        email: "",
-        phone: "",
-        company: "",
-        campaignId: "",
-      })
-      
-      setIsNewLeadDialogOpen(false)
-    } catch (error) {
-      console.error("Error creating lead:", error)
-      toast({
-        title: "Erreur",
-        description: "Impossible de créer le lead",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // Dans la fonction handleUpdateLeadStatus
+  // Mettre à jour le statut d'un lead
   const handleUpdateLeadStatus = async (id: number, status: string) => {
     try {
-      const response = await apiRequest(`/leads/${id}/status`, {
+      const response = await apiRequest(`/api/leads/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ statut: status }),
+        body: JSON.stringify({ status }),
       })
       
-      // Mettre à jour la liste des leads
-      setLeads(
-        leads.map((lead) => (lead.id === id ? response : lead))
-      )
+      setLeads(leads.map((lead) => (lead.id === id ? response : lead)))
       
       toast({
         title: "Statut mis à jour",
@@ -212,11 +250,10 @@ export default function LeadsPage() {
     }
   }
 
-  // Ajouter la fonction manquante handleViewLead
+  // Voir les détails d'un lead
   const handleViewLead = async (id: number) => {
     try {
-      const lead = await apiRequest(`/leads/${id}`);
-      // Afficher les détails du lead (par exemple dans un dialogue)
+      const lead = await apiRequest(`/api/leads/${id}`);
       console.log("Détails du lead:", lead);
       
       toast({
@@ -233,8 +270,102 @@ export default function LeadsPage() {
     }
   };
 
+  // Supprimer un lead
+  const handleDeleteLead = async (id: number) => {
+    try {
+      await apiRequest(`/api/leads/${id}`, {
+        method: 'DELETE',
+      });
+      
+      setLeads(leads.filter(lead => lead.id !== id));
+      
+      toast({
+        title: "Lead supprimé",
+        description: "Le lead a été supprimé avec succès.",
+      });
+    } catch (error) {
+      console.error("Error deleting lead:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le lead",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Fonctions utilitaires pour l'affichage
+  const getFullName = (lead: Lead) => {
+    if (lead.first_name || lead.last_name) {
+      return `${lead.first_name || ''} ${lead.last_name || ''}`.trim();
+    }
+    return "Sans nom";
+  };
+
+  const getCompanyName = (lead: Lead) => {
+    return lead.company || lead.entreprise || "Entreprise non spécifiée";
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "new": return "default"
+      case "contacted": return "outline"
+      case "qualified": return "secondary"
+      case "converted": return "default"
+      case "lost": return "destructive"
+      default: return "secondary"
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "new": return "Nouveau"
+      case "contacted": return "Contacté"
+      case "qualified": return "Qualifié"
+      case "converted": return "Converti"
+      case "lost": return "Perdu"
+      default: return status
+    }
+  };
+
+  const getValidationStatusVariant = (status: string) => {
+    switch (status) {
+      case "validated": return "default"
+      case "pending": return "secondary"
+      case "rejected": return "destructive"
+      default: return "outline"
+    }
+  };
+
+  const getValidationStatusText = (status: string) => {
+    switch (status) {
+      case "validated": return "Validé"
+      case "pending": return "En attente"
+      case "rejected": return "Rejeté"
+      case "unvalidated": return "Non validé"
+      default: return status
+    }
+  };
+
+  const getWebsiteMaturityColor = (maturity?: string) => {
+    switch (maturity) {
+      case "advanced": return "text-green-600 bg-green-100"
+      case "intermediate": return "text-yellow-600 bg-yellow-100"
+      case "basic": return "text-red-600 bg-red-100"
+      default: return "text-gray-600 bg-gray-100"
+    }
+  };
+
   if (loading) return <div className="p-4">Chargement des leads...</div>
   if (error) return <div className="p-4 text-red-500">Erreur: {error}</div>
+
+  // Statistiques des leads
+  const newLeads = leads.filter(l => l.status === "new")
+  const qualifiedLeads = leads.filter(l => l.status === "qualified")
+  const convertedLeads = leads.filter(l => l.status === "converted")
+  const leadsWithVisualAnalysis = leads.filter(l => l.visual_score !== undefined && l.visual_score !== null)
+  const avgVisualScore = leadsWithVisualAnalysis.length > 0 
+    ? (leadsWithVisualAnalysis.reduce((sum, lead) => sum + (lead.visual_score || 0), 0) / leadsWithVisualAnalysis.length).toFixed(1)
+    : 0
 
   return (
     <div className="flex flex-col gap-5 w-full">
@@ -250,10 +381,9 @@ export default function LeadsPage() {
           </Button>
           <Button 
             className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 transition-all duration-200"
-            onClick={handleSendToGHL}
           >
             <Send className="mr-2 h-4 w-4" />
-            Envoyer vers GHL
+            Envoyer vers CRM
           </Button>
         </div>
       </div>
@@ -269,121 +399,262 @@ export default function LeadsPage() {
           <Filter className="mr-2 h-4 w-4" />
           Filtres
         </Button>
+        <Button variant="outline" onClick={refreshLeads}>
+          <Search className="mr-2 h-4 w-4" />
+          Actualiser
+        </Button>
       </div>
 
-      <Card className="w-full">
-        <CardHeader className="py-4">
-          <CardTitle>Liste des leads</CardTitle>
-          <CardDescription>Tous les leads collectés par vos campagnes</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]">
-                  <Checkbox 
-                    checked={selectAll} 
-                    onCheckedChange={() => setSelectAll(!selectAll)}
-                  />
-                </TableHead>
-                <TableHead>Nom</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Téléphone</TableHead>
-                <TableHead>Entreprise</TableHead>
-                <TableHead>Campagne</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLeads.map((lead) => (
-                <TableRow key={lead.id}>
-                  <TableCell>
-                    <Checkbox 
-                      checked={selectedLeads.includes(lead.id)}
-                      onCheckedChange={() => handleSelectLead(lead.id)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{lead.nom || "Sans nom"}</TableCell>
-                  <TableCell>{lead.email || "Pas d'email"}</TableCell>
-                  <TableCell>{lead.telephone}</TableCell>
-                  <TableCell>{lead.entreprise}</TableCell>
-                  <TableCell>{lead.campagne_id}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        lead.statut === "new"
-                          ? "default"
-                          : lead.statut === "contacted"
-                            ? "outline"
-                            : lead.statut === "qualified"
-                              ? "secondary"
-                              : lead.statut === "converted"
-                                ? "success"
-                                : "destructive"
-                      }
-                      className={
-                        lead.statut === "new"
-                          ? "bg-blue-500 hover:bg-blue-600"
-                          : lead.statut === "converted"
-                            ? "bg-green-500 hover:bg-green-600"
-                            : ""
-                      }
-                    >
-                      {lead.statut === "new"
-                        ? "Nouveau"
-                        : lead.statut === "contacted"
-                          ? "Contacté"
-                          : lead.statut === "qualified"
-                            ? "Qualifié"
-                            : lead.statut === "converted"
-                              ? "Converti"
-                              : "Perdu"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{lead.date_creation}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
+      {/* Statistiques */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <Card className="w-full">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total leads</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{leads.length}</div>
+            <p className="text-xs text-muted-foreground">Leads collectés</p>
+          </CardContent>
+        </Card>
+        <Card className="w-full">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Nouveaux</CardTitle>
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{newLeads.length}</div>
+            <p className="text-xs text-muted-foreground">À traiter</p>
+          </CardContent>
+        </Card>
+        <Card className="w-full">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Qualifiés</CardTitle>
+            <Star className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{qualifiedLeads.length}</div>
+            <p className="text-xs text-muted-foreground">Prêts pour prospection</p>
+          </CardContent>
+        </Card>
+        <Card className="w-full">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Convertis</CardTitle>
+            <Send className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{convertedLeads.length}</div>
+            <p className="text-xs text-muted-foreground">Clients potentiels</p>
+          </CardContent>
+        </Card>
+        <Card className="w-full">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Score visuel moyen</CardTitle>
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{avgVisualScore}/10</div>
+            <p className="text-xs text-muted-foreground">{leadsWithVisualAnalysis.length} analysés</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="all" className="space-y-4" onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="all">Tous</TabsTrigger>
+          <TabsTrigger value="new">Nouveaux</TabsTrigger>
+          <TabsTrigger value="qualified">Qualifiés</TabsTrigger>
+          <TabsTrigger value="contacted">Contactés</TabsTrigger>
+          <TabsTrigger value="converted">Convertis</TabsTrigger>
+          <TabsTrigger value="visual">Avec analyse visuelle</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all" className="space-y-4">
+          <Card className="w-full">
+            <CardHeader className="py-4">
+              <CardTitle>Liste des leads</CardTitle>
+              <CardDescription>Tous les leads collectés par vos campagnes</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox 
+                        checked={selectAll} 
+                        onCheckedChange={() => setSelectAll(!selectAll)}
+                      />
+                    </TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Entreprise</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Validation</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Score visuel</TableHead>
+                    <TableHead>Maturité site</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLeads.map((lead) => (
+                    <TableRow key={lead.id}>
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedLeads.includes(lead.id)}
+                          onCheckedChange={() => handleSelectLead(lead.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{getFullName(lead)}</div>
+                        <div className="text-sm text-muted-foreground">{lead.email}</div>
+                        {lead.phone && <div className="text-xs text-muted-foreground">{lead.phone}</div>}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{getCompanyName(lead)}</div>
+                        {lead.position && <div className="text-sm text-muted-foreground">{lead.position}</div>}
+                        {lead.industry && <div className="text-xs text-muted-foreground">{lead.industry}</div>}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(lead.status)}>
+                          {getStatusText(lead.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getValidationStatusVariant(lead.validation_status)}>
+                          {getValidationStatusText(lead.validation_status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {lead.score ? (
+                          <div className="flex items-center gap-1">
+                            <Star className="h-3 w-3 text-yellow-500" />
+                            <span className="font-medium">{lead.score}/100</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {lead.visual_score ? (
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-3 w-3 text-blue-500" />
+                            <span className="font-medium">{lead.visual_score}/10</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {lead.website_maturity ? (
+                          <Badge className={getWebsiteMaturityColor(lead.website_maturity)}>
+                            {lead.website_maturity}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(lead.created_at).toLocaleDateString('fr-FR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleViewLead(lead.id)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Voir les détails
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleUpdateLeadStatus(lead.id, "contacted")}>
+                              Marquer comme contacté
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateLeadStatus(lead.id, "qualified")}>
+                              Marquer comme qualifié
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateLeadStatus(lead.id, "converted")}>
+                              Marquer comme converti
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateLeadStatus(lead.id, "lost")}>
+                              Marquer comme perdu
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteLead(lead.id)}
+                            >
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Les autres onglets utilisent la même structure mais avec des leads filtrés */}
+        {["new", "qualified", "contacted", "converted", "visual"].map((tabValue) => (
+          <TabsContent key={tabValue} value={tabValue} className="space-y-4">
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle>
+                  {tabValue === "new" && "Nouveaux leads"}
+                  {tabValue === "qualified" && "Leads qualifiés"}
+                  {tabValue === "contacted" && "Leads contactés"}
+                  {tabValue === "converted" && "Leads convertis"}
+                  {tabValue === "visual" && "Leads avec analyse visuelle"}
+                </CardTitle>
+                <CardDescription>
+                  {tabValue === "new" && "Leads récemment collectés qui nécessitent une action"}
+                  {tabValue === "qualified" && "Leads validés et prêts pour la prospection"}
+                  {tabValue === "contacted" && "Leads qui ont été contactés"}
+                  {tabValue === "converted" && "Leads qui se sont convertis en clients"}
+                  {tabValue === "visual" && "Leads avec analyse de maturité digitale"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {filteredLeads.map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3 last:border-0 last:pb-0">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                          <Building className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{getFullName(lead)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {getCompanyName(lead)} • {lead.email}
+                            {lead.visual_score && ` • Score visuel: ${lead.visual_score}/10`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <Badge variant={getStatusVariant(lead.status)}>
+                          {getStatusText(lead.status)}
+                        </Badge>
+                        <Button variant="outline" size="sm" onClick={() => handleViewLead(lead.id)}>
+                          <Eye className="mr-2 h-3 w-3" />
+                          Détails
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleViewLead(lead.id)}>
-                          Voir les détails
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleUpdateLeadStatus(lead.id, "contacted")}>
-                          Marquer comme contacté
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleUpdateLeadStatus(lead.id, "qualified")}>
-                          Marquer comme qualifié
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleUpdateLeadStatus(lead.id, "converted")}>
-                          Marquer comme converti
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleUpdateLeadStatus(lead.id, "lost")}>
-                          Marquer comme perdu
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => handleDeleteLead(lead.id)}
-                        >
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   )
 }

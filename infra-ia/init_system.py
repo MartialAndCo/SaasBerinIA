@@ -160,10 +160,20 @@ def setup_initial_tasks(agents):
     
     scheduler = agents["AgentSchedulerAgent"]
     
-    # Configuration des tâches récurrentes
+    # CORRECTION DU BUG : Vérifier les tâches existantes pour éviter la duplication
+    existing_tasks_result = scheduler.run({"action": "get_pending_tasks"})
+    existing_task_ids = set()
+    
+    if existing_tasks_result.get("status") == "success":
+        for task in existing_tasks_result.get("pending_tasks", []):
+            existing_task_ids.add(task.get("task_id", ""))
+        logger.info(f"Tâches existantes trouvées: {len(existing_task_ids)}")
+    
+    # Configuration des tâches récurrentes avec IDs fixes pour éviter les doublons
     tasks = [
         # Analyse hebdomadaire des performances du système
         {
+            "task_id": "pivot_strategy_weekly",
             "agent": "PivotStrategyAgent",
             "action": "recommend_optimizations",  # Action existante dans PivotStrategyAgent
             "params": {
@@ -179,6 +189,7 @@ def setup_initial_tasks(agents):
         
         # Vérification quotidienne des campagnes
         {
+            "task_id": "prospection_daily",
             "agent": "ProspectionSupervisor",
             "action": "list",  # Action existante dans ProspectionSupervisor
             "params": {},
@@ -189,9 +200,16 @@ def setup_initial_tasks(agents):
     ]
     
     for task in tasks:
+        # CORRECTION : Vérifier si la tâche existe déjà avant de la créer
+        task_id = task["task_id"]
+        if task_id in existing_task_ids:
+            logger.info(f"Tâche {task_id} existe déjà, pas de duplication.")
+            continue
+            
         try:
             result = scheduler.run({
                 "action": "schedule_task",
+                "task_id": task_id,  # ID fixe pour éviter les doublons
                 "task_data": {
                     "agent": task["agent"],
                     "action": task["action"],
@@ -203,12 +221,12 @@ def setup_initial_tasks(agents):
             })
             
             if result.get("status") == "success":
-                logger.info(f"Tâche planifiée avec succès: {task['agent']}.{task['action']}")
+                logger.info(f"Tâche planifiée avec succès: {task['agent']}.{task['action']} (ID: {task_id})")
             else:
-                logger.warning(f"Échec de la planification de la tâche: {result.get('message')}")
+                logger.warning(f"Échec de la planification de la tâche {task_id}: {result.get('message')}")
                 
         except Exception as e:
-            logger.error(f"Erreur lors de la planification de la tâche: {e}")
+            logger.error(f"Erreur lors de la planification de la tâche {task_id}: {e}")
 
 def register_handlers():
     """

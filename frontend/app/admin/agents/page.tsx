@@ -22,12 +22,17 @@ import { toast } from "@/components/ui/use-toast"
 // Type pour les agents
 interface Agent {
   id: number
-  nom: string
+  name: string
   type: string
-  statut: "active" | "inactive" | "warning" | "error"
-  derniere_execution: string
+  status: "active" | "inactive" | "warning" | "error"
+  derniere_execution: string | null
   leads_generes: number | null
   campagnes_actives: number
+  description?: string
+  config?: any
+  last_run?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 export default function AgentsPage() {
@@ -48,7 +53,7 @@ export default function AgentsPage() {
     const fetchAgents = async () => {
       try {
         setLoading(true)
-        const response = await apiRequest('/agents')
+        const response = await apiRequest('/api/agents')
         setAgents(response)
         setFilteredAgents(response)
         setError(null)
@@ -70,9 +75,9 @@ export default function AgentsPage() {
     // Filtrer par statut si un onglet spécifique est sélectionné
     if (activeTab !== "all") {
       filtered = filtered.filter(agent => {
-        if (activeTab === "active") return agent.statut === "active";
-        if (activeTab === "inactive") return agent.statut === "inactive";
-        if (activeTab === "error") return agent.statut === "error" || agent.statut === "warning";
+        if (activeTab === "active") return agent.status === "active";
+        if (activeTab === "inactive") return agent.status === "inactive";
+        if (activeTab === "error") return agent.status === "error" || agent.status === "warning";
         return true;
       });
     }
@@ -80,7 +85,7 @@ export default function AgentsPage() {
     // Filtrer par recherche
     if (searchQuery.trim() !== "") {
       filtered = filtered.filter(agent => 
-        agent.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         agent.type.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
@@ -102,7 +107,7 @@ export default function AgentsPage() {
   const handleRefresh = async () => {
     try {
       setLoading(true)
-      const response = await apiRequest('/agents')
+      const response = await apiRequest('/api/agents')
       setAgents(response)
       setFilteredAgents(response)
       setError(null)
@@ -128,13 +133,13 @@ export default function AgentsPage() {
   // Gérer le redémarrage d'un agent
   const handleRestartAgent = async (id: number) => {
     try {
-      const response = await apiRequest(`/agents/${id}/restart`, {
+      const response = await apiRequest(`/api/agents/${id}/restart`, {
         method: 'POST',
       });
       
       // Mettre à jour l'agent dans la liste
       setAgents(
-        agents.map((agent) => (agent.id === id ? { ...agent, statut: "active" } : agent))
+        agents.map((agent) => (agent.id === id ? { ...agent, status: "active" } : agent))
       );
       
       toast({
@@ -154,9 +159,9 @@ export default function AgentsPage() {
   // Gérer l'activation d'un agent
   const handleActivateAgent = async (id: number) => {
     try {
-      const response = await apiRequest(`/agents/${id}`, {
+      const response = await apiRequest(`/api/agents/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ statut: "active" }),
+        body: JSON.stringify({ status: "active" }),
       });
       
       setAgents(
@@ -180,14 +185,14 @@ export default function AgentsPage() {
   // Gérer la désactivation d'un agent
   const handleDeactivateAgent = async (agentId: number) => {
     try {
-      await apiRequest(`/agents/${agentId}/deactivate`, {
+      await apiRequest(`/api/agents/${agentId}/deactivate`, {
         method: 'POST',
       })
       
       // Mettre à jour l'agent dans la liste
       const updatedAgents = agents.map(agent => {
         if (agent.id === agentId) {
-          return { ...agent, statut: "inactive" as const }
+          return { ...agent, status: "inactive" as const }
         }
         return agent
       })
@@ -212,12 +217,12 @@ export default function AgentsPage() {
   const handleCreateNewAgent = async () => {
     try {
       const agentData = {
-        nom: newAgentForm.name,
+        name: newAgentForm.name,
         type: newAgentForm.type,
-        statut: "active",
+        status: "active",
       }
       
-      const response = await apiRequest('/agents', {
+      const response = await apiRequest('/api/agents', {
         method: 'POST',
         body: JSON.stringify(agentData),
       })
@@ -249,7 +254,7 @@ export default function AgentsPage() {
   // Gérer la suppression d'un agent
   const handleDeleteAgent = async (id: number) => {
     try {
-      await apiRequest(`/agents/${id}`, {
+      await apiRequest(`/api/agents/${id}`, {
         method: 'DELETE',
       });
       
@@ -274,7 +279,7 @@ export default function AgentsPage() {
   const handleViewAgentLogs = async (id: number) => {
     try {
       // Récupérer les logs de l'agent
-      const logs = await apiRequest(`/agents/${id}/logs`);
+      const logs = await apiRequest(`/api/agents/${id}/logs`);
       
       // Ici, vous pouvez afficher les logs dans un dialogue ou rediriger vers une page de logs
       console.log("Logs de l'agent:", logs);
@@ -297,9 +302,9 @@ export default function AgentsPage() {
   };
 
   // Ajoutez cette fonction dans le composant AgentsPage
-  const handleUpdateAgent = async (id: number, data: { statut?: string, nom?: string, type?: string }) => {
+  const handleUpdateAgent = async (id: number, data: { status?: string, name?: string, type?: string }) => {
     try {
-      const response = await apiRequest(`/agents/${id}`, {
+      const response = await apiRequest(`/api/agents/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
@@ -382,26 +387,26 @@ export default function AgentsPage() {
                   {filteredAgents.map((agent) => (
                     <TableRow key={agent.id}>
                       <TableCell>
-                        <div className="font-medium">{agent.nom}</div>
+                        <div className="font-medium">{agent.name}</div>
                         <div className="text-sm text-muted-foreground">{agent.type}</div>
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={
-                            agent.statut === "active"
+                            agent.status === "active"
                               ? "default"
-                              : agent.statut === "inactive"
+                              : agent.status === "inactive"
                               ? "outline"
-                              : agent.statut === "warning"
+                              : agent.status === "warning"
                               ? "secondary"
                               : "destructive"
                           }
                         >
-                          {agent.statut === "active"
+                          {agent.status === "active"
                             ? "Actif"
-                            : agent.statut === "inactive"
+                            : agent.status === "inactive"
                             ? "Inactif"
-                            : agent.statut === "warning"
+                            : agent.status === "warning"
                             ? "Avertissement"
                             : "Erreur"}
                         </Badge>
@@ -425,7 +430,7 @@ export default function AgentsPage() {
                             <DropdownMenuItem onClick={() => handleRestartAgent(agent.id)}>
                               Redémarrer
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleUpdateAgent(agent.id, { statut: "inactive" })}>
+                            <DropdownMenuItem onClick={() => handleUpdateAgent(agent.id, { status: "inactive" })}>
                               Désactiver
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -463,7 +468,7 @@ export default function AgentsPage() {
                         <Bot className="h-4 w-4 text-green-600 dark:text-green-400" />
                       </div>
                       <div>
-                        <p className="font-medium">{agent.nom}</p>
+                        <p className="font-medium">{agent.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {agent.type} • {agent.derniere_execution}
                         </p>
@@ -500,7 +505,7 @@ export default function AgentsPage() {
                         <Bot className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="font-medium">{agent.nom}</p>
+                        <p className="font-medium">{agent.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {agent.type} • {agent.derniere_execution}
                         </p>
@@ -533,14 +538,14 @@ export default function AgentsPage() {
                   >
                     <div className="flex items-center space-x-3">
                       <div
-                        className={`h-8 w-8 rounded-full ${agent.statut === "warning" ? "bg-yellow-100 dark:bg-yellow-900" : "bg-red-100 dark:bg-red-900"} flex items-center justify-center`}
+                        className={`h-8 w-8 rounded-full ${agent.status === "warning" ? "bg-yellow-100 dark:bg-yellow-900" : "bg-red-100 dark:bg-red-900"} flex items-center justify-center`}
                       >
                         <Bot
-                          className={`h-4 w-4 ${agent.statut === "warning" ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400"}`}
+                          className={`h-4 w-4 ${agent.status === "warning" ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400"}`}
                         />
                       </div>
                       <div>
-                        <p className="font-medium">{agent.nom}</p>
+                        <p className="font-medium">{agent.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {agent.type} • {agent.derniere_execution}
                         </p>

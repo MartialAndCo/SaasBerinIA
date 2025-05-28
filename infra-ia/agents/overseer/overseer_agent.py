@@ -602,6 +602,64 @@ class OverseerAgent(Agent):
             "message": "Action non reconnue ou données d'entrée incomplètes"
         }
 
+    def _should_ai_respond(self, interpretation: Dict[str, Any]) -> bool:
+        """
+        Vérifie si l'IA doit répondre selon les paramètres globaux et de conversation
+        
+        Args:
+            interpretation: Résultat de l'interprétation
+            
+        Returns:
+            True si l'IA doit répondre, False sinon
+        """
+        try:
+            # Import des modules nécessaires
+            from core.db import DatabaseService
+            
+            # Récupération des données de conversation
+            lead_data = interpretation.get("lead_data", {})
+            thread_id = str(lead_data.get("lead_id", "")) or interpretation.get("thread_id", "")
+            
+            if not thread_id:
+                # Si pas de thread_id, considérer que l'IA est activée par défaut
+                self.speak("Pas de thread_id trouvé, IA activée par défaut", target="AdminInterpreterAgent")
+                return True
+            
+            # Connexion à la base de données
+            db = DatabaseService()
+            
+            # 1. Vérifier les paramètres globaux
+            global_result = db.fetch_one(
+                "SELECT value FROM global_ai_settings WHERE key = 'ai_enabled'",
+                {}
+            )
+            
+            global_ai_enabled = global_result["value"] if global_result else True
+            
+            if not global_ai_enabled:
+                self.speak("IA désactivée globalement", target="AdminInterpreterAgent")
+                return False
+            
+            # 2. Vérifier les paramètres de conversation spécifique
+            conversation_result = db.fetch_one(
+                "SELECT ai_enabled FROM conversation_ai_settings WHERE thread_id = :thread_id",
+                {"thread_id": thread_id}
+            )
+            
+            conversation_ai_enabled = conversation_result["ai_enabled"] if conversation_result else True
+            
+            if not conversation_ai_enabled:
+                self.speak(f"IA désactivée pour la conversation {thread_id}", target="AdminInterpreterAgent")
+                return False
+            
+            self.speak("IA activée - réponse autorisée", target="AdminInterpreterAgent")
+            return True
+            
+        except Exception as e:
+            # En cas d'erreur, autoriser la réponse par défaut (comportement sécurisé)
+            self.speak(f"Erreur lors de la vérification IA: {str(e)} - autorisation par défaut", target="AdminInterpreterAgent")
+            return True
+
     def handle_response_interpretation(self, interpretation: Dict[str, Any]) -> Dict[str, Any]:
         """
         Traite les résultats d'interprétation d'une réponse de lead
@@ -615,6 +673,16 @@ class OverseerAgent(Agent):
             Résultat du traitement
         """
         self.speak("Traitement d'une interprétation de réponse", target="AdminInterpreterAgent")
+        
+        # ✅ VÉRIFICATION IA - NOUVELLE LOGIQUE
+        if not self._should_ai_respond(interpretation):
+            self.speak("IA désactivée - aucune réponse automatique envoyée", target="AdminInterpreterAgent")
+            return {
+                "status": "success",
+                "message": "IA désactivée - message traité mais aucune réponse automatique",
+                "action_taken": "no_response_ai_disabled",
+                "interpretation": interpretation.get("interpretation", {})
+            }
         
         # Extraction des informations importantes
         interpretation_data = interpretation.get("interpretation", {})

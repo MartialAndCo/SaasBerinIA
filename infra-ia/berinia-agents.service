@@ -1,0 +1,21 @@
+[Unit]
+Description=BerinIA Agents Environment Service
+After=network.target postgresql.service berinia-qdrant.service
+Requires=berinia-qdrant.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/berinia/infra-ia
+ExecStart=/bin/bash -c "source .venv/bin/activate && python run.py"
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+# Security
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

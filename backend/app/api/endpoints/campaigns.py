@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy import func
 from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 
 from app.api import deps
 from app.models.campaign import Campaign as CampaignModel
@@ -11,9 +12,11 @@ from app.schemas.campaign import Campaign, CampaignCreate, CampaignUpdate
 from app.crud import campaign as crud
 from app.models.user import User as UserModel
 
-# Remplacer
 router = APIRouter()
 
+# Schéma pour la mise à jour du statut
+class StatusUpdate(BaseModel):
+    status: str
 
 @router.get("/", response_model=List[Campaign])
 def get_campaigns(
@@ -61,9 +64,7 @@ def get_campaigns(
         else:
             campaign.conversion = 0.0
 
-    # Utiliser jsonable_encoder pour sérialiser les objets SQLAlchemy
-    result = jsonable_encoder(campaigns)
-    return result
+    return jsonable_encoder(campaigns)
 
 @router.get("/{campaign_id}", response_model=Campaign)
 def get_campaign(campaign_id: int, db: Session = Depends(deps.get_db)):
@@ -93,9 +94,7 @@ def get_campaign(campaign_id: int, db: Session = Depends(deps.get_db)):
     else:
         campaign.conversion = 0.0
     
-    # Utiliser jsonable_encoder pour sérialiser l'objet SQLAlchemy
-    result = jsonable_encoder(campaign)
-    return result
+    return jsonable_encoder(campaign)
 
 @router.post("/", response_model=Campaign)
 def create_campaign(
@@ -104,17 +103,7 @@ def create_campaign(
     current_user: UserModel = Depends(deps.get_current_active_user),
 ):
     campaign = crud.campaign.create(db=db, obj_in=campaign_in)
-    return jsonable_encoder(jsonable_encoder)(campaign)
-
-@router.get("/{campaign_id}", response_model=Campaign)
-def get_campaign(campaign_id: int, db: Session = Depends(deps.get_db)):
-    """
-    Récupérer une campagne spécifique par son ID.
-    """
-    campaign = db.query(CampaignModel).filter(CampaignModel.id == campaign_id).first()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
-    return jsonable_encoder(jsonable_encoder)(campaign)
+    return jsonable_encoder(campaign)
 
 @router.put("/{id}", response_model=Campaign)
 def update_campaign(
@@ -127,23 +116,14 @@ def update_campaign(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     campaign = crud.campaign.update(db=db, db_obj=campaign, obj_in=campaign_in)
-    return jsonable_encoder(jsonable_encoder)(campaign)
-
-@router.delete("/{campaign_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_campaign(campaign_id: int, db: Session = Depends(deps.get_db)):
-    """
-    Supprimer une campagne.
-    """
-    db_campaign = db.query(CampaignModel).filter(CampaignModel.id == campaign_id).first()
-    if not db_campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
-    
-    db.delete(db_campaign)
-    db.commit()
-    return None
+    return jsonable_encoder(campaign)
 
 @router.put("/{campaign_id}/status", response_model=Campaign)
-def update_campaign_status(campaign_id: int, status: str, db: Session = Depends(deps.get_db)):
+def update_campaign_status(
+    campaign_id: int, 
+    status_data: StatusUpdate,
+    db: Session = Depends(deps.get_db)
+):
     """
     Mettre à jour le statut d'une campagne.
     """
@@ -151,7 +131,47 @@ def update_campaign_status(campaign_id: int, status: str, db: Session = Depends(
     if db_campaign is None:
         raise HTTPException(status_code=404, detail="Campagne non trouvée")
     
-    db_campaign.statut = status
+    # Valider le statut
+    valid_statuses = ["active", "paused", "completed", "archived"]
+    if status_data.status not in valid_statuses:
+        raise HTTPException(
+            status_code=422, 
+            detail=f"Statut invalide. Valeurs autorisées: {', '.join(valid_statuses)}"
+        )
+    
+    db_campaign.status = status_data.status
     db.commit()
     db.refresh(db_campaign)
-    return jsonable_encoder(db_campaign) 
+    return jsonable_encoder(db_campaign)
+
+@router.delete("/{campaign_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_campaign(campaign_id: int, db: Session = Depends(deps.get_db)):
+    """
+    Supprimer une campagne en gérant les contraintes de clés étrangères.
+    """
+    db_campaign = db.query(CampaignModel).filter(CampaignModel.id == campaign_id).first()
+    if not db_campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    # Vérifier s'il y a des leads associés
+    leads_count = db.query(func.count(LeadModel.id)).filter(LeadModel.campagne_id == campaign_id).scalar() or 0
+    
+    if leads_count > 0:
+        # Option 1: Dissocier les leads (mettre campagne_id à NULL)
+        db.query(LeadModel).filter(LeadModel.campagne_id == campaign_id).update(
+            {"campagne_id": None}, synchronize_session=False
+        )
+        
+        # Option 2: Alternative - Empêcher la suppression
+        # raise HTTPException(
+        #     status_code=400, 
+        #     detail=f"Impossible de supprimer la campagne. {leads_count} leads y sont associés."
+        # )
+    
+    try:
+        db.delete(db_campaign)
+        db.commit()
+        return None
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la suppression: {str(e)}")

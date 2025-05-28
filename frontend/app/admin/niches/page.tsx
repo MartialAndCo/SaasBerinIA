@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ArrowDown, ArrowUp, BarChart3, Globe, MoreHorizontal, Plus, RefreshCw, Zap } from "lucide-react"
+import { ArrowDown, ArrowUp, BarChart3, Globe, MoreHorizontal, Plus, RefreshCw, Trash2, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -21,28 +21,29 @@ import { apiRequest } from "@/services/api-interceptor"
 import { toast } from "@/components/ui/use-toast"
 import { CreateNicheDialog } from "@/components/niches/create-niche-dialog"
 
-// Type pour les données de niche
+// Type pour les données de niche adaptées aux vraies données du backend
 interface Niche {
   id: number
-  nom: string
-  description: string
-  statut: string
-  taux_conversion: number
-  cout_par_lead: number
-  recommandation: string
-  date_creation: string
-  campaigns?: any[]
+  name: string
+  description?: string
+  status: string
+  keywords?: string
+  created_at: string
+  updated_at?: string
+  exploration_depth?: number
+  campagnes?: any[]
   leads?: any[]
+  // Propriétés calculées (ajoutées par le frontend)
+  taux_conversion?: number
+  cout_par_lead?: number
+  recommandation?: string
 }
 
-// Définissez d'abord l'interface pour les données du formulaire
+// Interface pour les données du formulaire
 interface NicheFormData {
-  nom: string;
+  name: string;
   description: string;
-  statut: string;
-  taux_conversion: number;
-  cout_par_lead: number;
-  recommandation: string;
+  status: string;
 }
 
 export default function NichesPage() {
@@ -57,9 +58,20 @@ export default function NichesPage() {
     const fetchNiches = async () => {
       try {
         setLoading(true)
-        const response = await apiRequest('/niches')
-        setNiches(response)
-        setFilteredNiches(response)
+        const response = await apiRequest('/api/niches/')
+        console.log('Niches reçues depuis l\'API:', response) // Debug pour voir la vraie structure
+        
+        // Adapter les données si nécessaire
+        const adaptedNiches = response.map((niche: any) => ({
+          ...niche,
+          // Calculer des métriques par défaut si elles n'existent pas
+          taux_conversion: niche.taux_conversion || 0,
+          cout_par_lead: niche.cout_par_lead || 0,
+          recommandation: niche.recommandation || "Continuer"
+        }))
+        
+        setNiches(adaptedNiches)
+        setFilteredNiches(adaptedNiches)
         setError(null)
       } catch (err) {
         console.error("Error fetching niches:", err)
@@ -72,13 +84,19 @@ export default function NichesPage() {
     fetchNiches()
   }, [])
 
-  // Ajout de la fonction pour actualiser les niches
+  // Fonction pour actualiser les niches
   const refreshNiches = async () => {
     setLoading(true)
     try {
-      const response = await apiRequest('/niches')
-      setNiches(response)
-      setFilteredNiches(response)
+      const response = await apiRequest('/api/niches/')
+      const adaptedNiches = response.map((niche: any) => ({
+        ...niche,
+        taux_conversion: niche.taux_conversion || 0,
+        cout_par_lead: niche.cout_par_lead || 0,
+        recommandation: niche.recommandation || "Continuer"
+      }))
+      setNiches(adaptedNiches)
+      setFilteredNiches(adaptedNiches)
     } catch (error) {
       console.error("Error fetching niches:", error)
       setError("Impossible de charger les niches")
@@ -87,7 +105,7 @@ export default function NichesPage() {
     }
   }
 
-  // Ajout de la fonction pour rechercher des niches
+  // Fonction pour rechercher des niches
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
   }
@@ -95,28 +113,36 @@ export default function NichesPage() {
   // Filtrer les niches en fonction de la recherche
   useEffect(() => {
     if (searchQuery.trim() === "") {
-      // Si la recherche est vide, on utilise toutes les niches
       setFilteredNiches(niches)
     } else {
-      // Sinon, on filtre les niches par nom
       const filtered = niches.filter(niche => 
-        niche.nom.toLowerCase().includes(searchQuery.toLowerCase())
+        niche.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
       setFilteredNiches(filtered)
     }
   }, [niches, searchQuery])
 
-  // Fonction pour traduire le statut en anglais (pour les classes CSS)
-  const getStatusClass = (statut: string) => {
-    switch (statut) {
-      case "Rentable": return "profitable"
-      case "En test": return "testing"
-      case "Abandonnée": return "abandoned"
-      default: return "testing"
+  // Fonction pour obtenir la variante du badge selon le statut
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "active": return "default"
+      case "inactive": return "secondary"
+      case "completed": return "outline"
+      default: return "secondary"
     }
   }
 
-  // Fonction pour traduire la recommandation en anglais (pour les classes CSS)
+  // Fonction pour obtenir le texte du statut en français
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "active": return "Actif"
+      case "inactive": return "Inactif"
+      case "completed": return "Terminé"
+      default: return status
+    }
+  }
+
+  // Fonction pour obtenir la classe de recommandation
   const getRecommendationClass = (recommandation: string) => {
     switch (recommandation) {
       case "Continuer": return "continue"
@@ -127,17 +153,17 @@ export default function NichesPage() {
     }
   }
 
-  // Dans la fonction handleCreateNiche
+  // Fonction pour créer une niche
   const handleCreateNiche = async (formData: NicheFormData) => {
     try {
-      await apiRequest('/niches', {
+      await apiRequest('/api/niches/', {
         method: 'POST',
         body: JSON.stringify(formData)
       })
       
       toast({
         title: "Niche créée",
-        description: `La niche "${formData.nom}" a été créée avec succès.`
+        description: `La niche "${formData.name}" a été créée avec succès.`
       })
       
       refreshNiches()
@@ -151,15 +177,14 @@ export default function NichesPage() {
     }
   }
 
-  // Dans la fonction handleUpdateNiche
+  // Fonction pour mettre à jour une niche
   const handleUpdateNiche = async (id: number, data: any) => {
     try {
-      const response = await apiRequest(`/niches/${id}`, {
+      const response = await apiRequest(`/api/niches/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       })
       
-      // Mettre à jour la liste des niches
       setNiches(
         niches.map((niche) => (niche.id === id ? response : niche))
       )
@@ -178,13 +203,43 @@ export default function NichesPage() {
     }
   }
 
+  // Fonction pour supprimer une niche
+  const handleDeleteNiche = async (niche: Niche) => {
+    // Confirmer la suppression
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la niche "${niche.name}" ? Cette action est irréversible.`)) {
+      return
+    }
+
+    try {
+      await apiRequest(`/api/niches/${niche.id}`, {
+        method: 'DELETE'
+      })
+      
+      // Mettre à jour la liste des niches
+      setNiches(niches.filter(n => n.id !== niche.id))
+      setFilteredNiches(filteredNiches.filter(n => n.id !== niche.id))
+      
+      toast({
+        title: "Niche supprimée",
+        description: `La niche "${niche.name}" a été supprimée avec succès.`
+      })
+    } catch (error) {
+      console.error("Error deleting niche:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la niche",
+        variant: "destructive"
+      })
+    }
+  }
+
   if (loading) return <div className="p-4">Chargement des niches...</div>
   if (error) return <div className="p-4 text-red-500">Erreur: {error}</div>
 
   // Filtrer les niches par statut
-  const profitableNiches = niches.filter(niche => niche.statut === "Rentable")
-  const testingNiches = niches.filter(niche => niche.statut === "En test")
-  const abandonedNiches = niches.filter(niche => niche.statut === "Abandonnée")
+  const activeNiches = niches.filter(niche => niche.status === "active")
+  const inactiveNiches = niches.filter(niche => niche.status === "inactive")
+  const completedNiches = niches.filter(niche => niche.status === "completed")
 
   return (
     <div className="flex flex-col gap-5 w-full">
@@ -212,9 +267,9 @@ export default function NichesPage() {
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all">Toutes</TabsTrigger>
-          <TabsTrigger value="profitable">Rentables</TabsTrigger>
-          <TabsTrigger value="testing">En test</TabsTrigger>
-          <TabsTrigger value="abandoned">Abandonnées</TabsTrigger>
+          <TabsTrigger value="active">Actives</TabsTrigger>
+          <TabsTrigger value="inactive">Inactives</TabsTrigger>
+          <TabsTrigger value="completed">Terminées</TabsTrigger>
         </TabsList>
         <TabsContent value="all" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -224,8 +279,8 @@ export default function NichesPage() {
                 <Globe className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">8</div>
-                <p className="text-xs text-muted-foreground">3 niches rentables identifiées</p>
+                <div className="text-2xl font-bold">{niches.length}</div>
+                <p className="text-xs text-muted-foreground">{activeNiches.length} niches actives</p>
               </CardContent>
             </Card>
             <Card className="w-full">
@@ -236,8 +291,12 @@ export default function NichesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">6.8%</div>
-                <p className="text-xs text-muted-foreground">+1.2% par rapport au mois dernier</p>
+                <div className="text-2xl font-bold">
+                  {niches.length > 0 
+                    ? (niches.reduce((sum, niche) => sum + (niche.taux_conversion || 0), 0) / niches.length).toFixed(1)
+                    : 0}%
+                </div>
+                <p className="text-xs text-muted-foreground">Calculé depuis les niches existantes</p>
               </CardContent>
             </Card>
             <Card className="w-full">
@@ -248,18 +307,22 @@ export default function NichesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2.35€</div>
-                <p className="text-xs text-muted-foreground">-0.45€ par rapport au mois dernier</p>
+                <div className="text-2xl font-bold">
+                  {niches.length > 0 
+                    ? (niches.reduce((sum, niche) => sum + (niche.cout_par_lead || 0), 0) / niches.length).toFixed(2)
+                    : 0}€
+                </div>
+                <p className="text-xs text-muted-foreground">Calculé depuis les niches existantes</p>
               </CardContent>
             </Card>
             <Card className="w-full">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Décisions de pivot</CardTitle>
+                <CardTitle className="text-sm font-medium">Niches créées</CardTitle>
                 <Zap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">5</div>
-                <p className="text-xs text-muted-foreground">2 pivots ce mois-ci</p>
+                <div className="text-2xl font-bold">{niches.length}</div>
+                <p className="text-xs text-muted-foreground">Total des niches dans le système</p>
               </CardContent>
             </Card>
           </div>
@@ -267,7 +330,7 @@ export default function NichesPage() {
           <Card className="w-full">
             <CardHeader>
               <CardTitle>Performance des niches</CardTitle>
-              <CardDescription>Comparaison des taux de conversion et coûts par lead</CardDescription>
+              <CardDescription>Analyse des performances basée sur les données réelles</CardDescription>
             </CardHeader>
             <CardContent>
               <NichePerformanceChart />
@@ -284,67 +347,29 @@ export default function NichesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nom</TableHead>
+                    <TableHead>Description</TableHead>
                     <TableHead>Statut</TableHead>
+                    <TableHead>Keywords</TableHead>
                     <TableHead>Campagnes</TableHead>
                     <TableHead>Leads</TableHead>
-                    <TableHead>Taux de conversion</TableHead>
-                    <TableHead>Coût par lead</TableHead>
-                    <TableHead>Recommandation</TableHead>
+                    <TableHead>Date création</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredNiches.map((niche) => (
                     <TableRow key={niche.id}>
-                      <TableCell className="font-medium">{niche.nom || "Sans nom"}</TableCell>
+                      <TableCell className="font-medium">{niche.name || "Sans nom"}</TableCell>
+                      <TableCell className="max-w-xs truncate">{niche.description || "Pas de description"}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            niche.statut === "profitable"
-                              ? "default"
-                              : niche.statut === "testing"
-                                ? "secondary"
-                                : "outline"
-                          }
-                          className={
-                            niche.statut === "profitable"
-                              ? "bg-green-500 hover:bg-green-600"
-                              : niche.statut === "testing"
-                                ? "bg-blue-500 hover:bg-blue-600"
-                                : "border-red-500 text-red-500"
-                          }
-                        >
-                          {niche.statut || "En test"}
+                        <Badge variant={getStatusVariant(niche.status)}>
+                          {getStatusText(niche.status)}
                         </Badge>
                       </TableCell>
-                      <TableCell>{niche.campaigns ? niche.campaigns.length : 0}</TableCell>
+                      <TableCell className="max-w-xs truncate">{niche.keywords || "Aucun"}</TableCell>
+                      <TableCell>{niche.campagnes ? niche.campagnes.length : 0}</TableCell>
                       <TableCell>{niche.leads ? niche.leads.length : 0}</TableCell>
-                      <TableCell>{niche.taux_conversion !== undefined ? niche.taux_conversion : 0}%</TableCell>
-                      <TableCell>{niche.cout_par_lead !== undefined ? niche.cout_par_lead : 0}€</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            getRecommendationClass(niche.recommandation || "Continuer") === "scale" 
-                              ? "default"
-                              : getRecommendationClass(niche.recommandation || "Continuer") === "continue" 
-                                ? "secondary"
-                                : getRecommendationClass(niche.recommandation || "Continuer") === "optimize" 
-                                  ? "outline"
-                                  : "destructive"
-                          }
-                          className={
-                            getRecommendationClass(niche.recommandation || "Continuer") === "scale" 
-                              ? "bg-green-500 hover:bg-green-600"
-                              : getRecommendationClass(niche.recommandation || "Continuer") === "continue" 
-                                ? "bg-blue-500 hover:bg-blue-600"
-                                : getRecommendationClass(niche.recommandation || "Continuer") === "optimize" 
-                                  ? "border-yellow-500 text-yellow-500"
-                                  : "bg-red-500 hover:bg-red-600"
-                          }
-                        >
-                          {niche.recommandation || "Continuer"}
-                        </Badge>
-                      </TableCell>
+                      <TableCell>{niche.created_at ? new Date(niche.created_at).toLocaleDateString('fr-FR') : "N/A"}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -366,7 +391,14 @@ export default function NichesPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem>
                               <Zap className="mr-2 h-4 w-4" />
-                              Appliquer la recommandation
+                              Modifier la niche
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600 focus:text-red-600"
+                              onClick={() => handleDeleteNiche(niche)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Supprimer la niche
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -378,53 +410,37 @@ export default function NichesPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="profitable" className="space-y-4">
+        
+        <TabsContent value="active" className="space-y-4">
           <Card className="w-full">
             <CardHeader>
-              <CardTitle>Niches rentables</CardTitle>
-              <CardDescription>Niches avec un bon retour sur investissement</CardDescription>
+              <CardTitle>Niches actives</CardTitle>
+              <CardDescription>Niches actuellement en fonctionnement</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-8">
-                {profitableNiches.map((niche) => (
+                {activeNiches.map((niche) => (
                   <div key={niche.id} className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">{niche.nom || "Sans nom"}</h3>
+                      <h3 className="font-medium">{niche.name || "Sans nom"}</h3>
                       <p className="text-sm text-gray-500">
-                        {niche.campaigns ? niche.campaigns.length : 0} campagne{niche.campaigns && niche.campaigns.length > 1 ? 's' : ''} • {niche.leads ? niche.leads.length : 0} leads
+                        {niche.campagnes ? niche.campagnes.length : 0} campagne{niche.campagnes && niche.campagnes.length > 1 ? 's' : ''} • 
+                        {niche.leads ? niche.leads.length : 0} leads • 
+                        Créée le {niche.created_at ? new Date(niche.created_at).toLocaleDateString('fr-FR') : "N/A"}
                       </p>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="font-medium">{niche.taux_conversion !== undefined ? niche.taux_conversion : 0}%</p>
-                        <p className="text-sm text-gray-500">Taux de conversion</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{niche.cout_par_lead !== undefined ? niche.cout_par_lead : 0}€</p>
-                        <p className="text-sm text-gray-500">Coût par lead</p>
-                      </div>
-                      <Badge
-                        variant={
-                          getRecommendationClass(niche.recommandation || "Continuer") === "scale" 
-                            ? "default"
-                            : getRecommendationClass(niche.recommandation || "Continuer") === "continue" 
-                              ? "secondary"
-                              : getRecommendationClass(niche.recommandation || "Continuer") === "optimize" 
-                                ? "outline"
-                                : "destructive"
-                        }
-                        className={
-                          getRecommendationClass(niche.recommandation || "Continuer") === "scale" 
-                            ? "bg-green-500 hover:bg-green-600"
-                            : getRecommendationClass(niche.recommandation || "Continuer") === "continue" 
-                              ? "bg-blue-500 hover:bg-blue-600"
-                              : getRecommendationClass(niche.recommandation || "Continuer") === "optimize" 
-                                ? "border-yellow-500 text-yellow-500"
-                                : "bg-red-500 hover:bg-red-600"
-                        }
-                      >
-                        {niche.recommandation || "Continuer"}
+                      <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                        Actif
                       </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteNiche(niche)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -432,53 +448,37 @@ export default function NichesPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="testing" className="space-y-4">
+        
+        <TabsContent value="inactive" className="space-y-4">
           <Card className="w-full">
             <CardHeader>
-              <CardTitle>Niches en test</CardTitle>
-              <CardDescription>Niches en cours d'évaluation</CardDescription>
+              <CardTitle>Niches inactives</CardTitle>
+              <CardDescription>Niches temporairement désactivées</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-8">
-                {testingNiches.map((niche) => (
+                {inactiveNiches.map((niche) => (
                   <div key={niche.id} className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">{niche.nom || "Sans nom"}</h3>
+                      <h3 className="font-medium">{niche.name || "Sans nom"}</h3>
                       <p className="text-sm text-gray-500">
-                        {niche.campaigns ? niche.campaigns.length : 0} campagne{niche.campaigns && niche.campaigns.length > 1 ? 's' : ''} • {niche.leads ? niche.leads.length : 0} leads
+                        {niche.campagnes ? niche.campagnes.length : 0} campagne{niche.campagnes && niche.campagnes.length > 1 ? 's' : ''} • 
+                        {niche.leads ? niche.leads.length : 0} leads • 
+                        Créée le {niche.created_at ? new Date(niche.created_at).toLocaleDateString('fr-FR') : "N/A"}
                       </p>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="font-medium">{niche.taux_conversion !== undefined ? niche.taux_conversion : 0}%</p>
-                        <p className="text-sm text-gray-500">Taux de conversion</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{niche.cout_par_lead !== undefined ? niche.cout_par_lead : 0}€</p>
-                        <p className="text-sm text-gray-500">Coût par lead</p>
-                      </div>
-                      <Badge
-                        variant={
-                          getRecommendationClass(niche.recommandation || "Continuer") === "scale" 
-                            ? "default"
-                            : getRecommendationClass(niche.recommandation || "Continuer") === "continue" 
-                              ? "secondary"
-                              : getRecommendationClass(niche.recommandation || "Continuer") === "optimize" 
-                                ? "outline"
-                                : "destructive"
-                        }
-                        className={
-                          getRecommendationClass(niche.recommandation || "Continuer") === "scale" 
-                            ? "bg-green-500 hover:bg-green-600"
-                            : getRecommendationClass(niche.recommandation || "Continuer") === "continue" 
-                              ? "bg-blue-500 hover:bg-blue-600"
-                              : getRecommendationClass(niche.recommandation || "Continuer") === "optimize" 
-                                ? "border-yellow-500 text-yellow-500"
-                                : "bg-red-500 hover:bg-red-600"
-                        }
-                      >
-                        {niche.recommandation || "Continuer"}
+                      <Badge variant="secondary">
+                        Inactif
                       </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteNiche(niche)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -486,53 +486,37 @@ export default function NichesPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="abandoned" className="space-y-4">
+        
+        <TabsContent value="completed" className="space-y-4">
           <Card className="w-full">
             <CardHeader>
-              <CardTitle>Niches abandonnées</CardTitle>
-              <CardDescription>Niches non rentables ou pivotées</CardDescription>
+              <CardTitle>Niches terminées</CardTitle>
+              <CardDescription>Niches dont l'exploration est terminée</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-8">
-                {abandonedNiches.map((niche) => (
+                {completedNiches.map((niche) => (
                   <div key={niche.id} className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">{niche.nom || "Sans nom"}</h3>
+                      <h3 className="font-medium">{niche.name || "Sans nom"}</h3>
                       <p className="text-sm text-gray-500">
-                        {niche.campaigns ? niche.campaigns.length : 0} campagne{niche.campaigns && niche.campaigns.length > 1 ? 's' : ''} • {niche.leads ? niche.leads.length : 0} leads
+                        {niche.campagnes ? niche.campagnes.length : 0} campagne{niche.campagnes && niche.campagnes.length > 1 ? 's' : ''} • 
+                        {niche.leads ? niche.leads.length : 0} leads • 
+                        Créée le {niche.created_at ? new Date(niche.created_at).toLocaleDateString('fr-FR') : "N/A"}
                       </p>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="font-medium">{niche.taux_conversion !== undefined ? niche.taux_conversion : 0}%</p>
-                        <p className="text-sm text-gray-500">Taux de conversion</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{niche.cout_par_lead !== undefined ? niche.cout_par_lead : 0}€</p>
-                        <p className="text-sm text-gray-500">Coût par lead</p>
-                      </div>
-                      <Badge
-                        variant={
-                          getRecommendationClass(niche.recommandation || "Continuer") === "scale" 
-                            ? "default"
-                            : getRecommendationClass(niche.recommandation || "Continuer") === "continue" 
-                              ? "secondary"
-                              : getRecommendationClass(niche.recommandation || "Continuer") === "optimize" 
-                                ? "outline"
-                                : "destructive"
-                        }
-                        className={
-                          getRecommendationClass(niche.recommandation || "Continuer") === "scale" 
-                            ? "bg-green-500 hover:bg-green-600"
-                            : getRecommendationClass(niche.recommandation || "Continuer") === "continue" 
-                              ? "bg-blue-500 hover:bg-blue-600"
-                              : getRecommendationClass(niche.recommandation || "Continuer") === "optimize" 
-                                ? "border-yellow-500 text-yellow-500"
-                                : "bg-red-500 hover:bg-red-600"
-                        }
-                      >
-                        {niche.recommandation || "Continuer"}
+                      <Badge variant="outline">
+                        Terminé
                       </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteNiche(niche)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}

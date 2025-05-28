@@ -13,5 +13,14 @@
   "sms_settings": {
     "allowed_countries": ["+33"],
     "block_list": []
+  },
+  "instantly_settings": {
+    "enabled": true,
+    "webhook_events": [
+      "reply_received", 
+      "email_opened", 
+      "link_clicked", 
+      "lead_interested"
+    ]
   }
 }

@@ -12,6 +12,7 @@ from core.agent_base import Agent
 from utils.llm import LLMService
 from core.db import DatabaseService
 from agents.response_interpreter.lead_manager import LeadManager
+from utils.qdrant import create_embedding, query_knowledge, search_similar, add_to_collection, store_knowledge
 
 class ResponseInterpreterAgent(Agent):
     """
@@ -177,7 +178,7 @@ class ResponseInterpreterAgent(Agent):
             "is_client_website": is_client_website
         }
     
-    def _interpret_with_llm(self, content: str, response_type: str, campaign_id: str) -> Dict[str, Any]:
+    def _interpret_with_llm(self, content: str, response_type: str, campaign_id: str, embedding: Optional[List[float]] = None) -> Dict[str, Any]:
         """
         Interprète une réponse à l'aide d'un LLM
         
@@ -185,6 +186,7 @@ class ResponseInterpreterAgent(Agent):
             content: Contenu de la réponse
             response_type: Type de réponse (email, sms)
             campaign_id: ID de la campagne
+            embedding: Embedding vectoriel du contenu (optionnel)
             
         Returns:
             Résultat de l'interprétation
@@ -192,6 +194,37 @@ class ResponseInterpreterAgent(Agent):
         # Récupération du contexte de la campagne si nécessaire
         campaign_context = self._get_campaign_context(campaign_id) if campaign_id else ""
         
+        # Recherche de conversations similaires dans Qdrant
+        conversation_context = ""
+        try:
+            # Utiliser l'embedding fourni ou en créer un nouveau
+            vector = embedding if embedding is not None else create_embedding(content)
+            
+            # Rechercher des conversations similaires
+            similar_conversations = search_similar("conversations", vector, limit=5)
+            
+            if similar_conversations:
+                conversation_context = "\nCONTEXTE CONVERSATIONNEL HISTORIQUE:\n"
+                for idx, conv in enumerate(similar_conversations):
+                    # Extraire des informations utiles des conversations similaires
+                    conv_content = conv.get("content", "")
+                    sentiment = conv.get("metadata", {}).get("sentiment", "inconnu")
+                    interest = conv.get("metadata", {}).get("interest_level", "inconnu")
+                    timestamp = conv.get("metadata", {}).get("timestamp", "")
+                    
+                    # Limiter la taille du contenu pour éviter des prompts trop longs
+                    if len(conv_content) > 200:
+                        conv_content = conv_content[:197] + "..."
+                    
+                    # Ajouter au contexte
+                    conversation_context += f"Message précédent {idx+1}: {conv_content}\n"
+                    conversation_context += f"Sentiment: {sentiment}, Intérêt: {interest}\n"
+                    
+                self.speak(f"Contexte enrichi avec {len(similar_conversations)} conversations similaires", target="ProspectionSupervisor")
+        except Exception as e:
+            self.speak(f"Erreur lors de la recherche de conversations similaires: {str(e)}", target="ProspectionSupervisor")
+            # En cas d'erreur, continuer sans contexte additionnel
+            
         # Construction du prompt
         prompt = f"""
         Analyse cette réponse {response_type} et détermine:
@@ -199,6 +232,8 @@ class ResponseInterpreterAgent(Agent):
         2. Son INTÉRÊT (high, medium, low, none)
         3. Les OBJECTIONS ou QUESTIONS éventuelles
         4. Si la personne demande de ne plus la contacter (DO_NOT_CONTACT: true/false)
+        
+        {conversation_context}
         
         RÉPONSE À ANALYSER:
         {content}
@@ -833,7 +868,8 @@ class ResponseInterpreterAgent(Agent):
     
     def _notify_overseer(self, interpretation_result: Dict[str, Any]) -> None:
         """
-        Notifie l'OverseerAgent du résultat de l'interprétation
+        Notifie l'OverseerAgent du résultat de l'interprétation et sauvegarde 
+        le message dans la mémoire vectorielle
         
         Args:
             interpretation_result: Résultat de l'interprétation
@@ -850,6 +886,36 @@ class ResponseInterpreterAgent(Agent):
                 "interpretation": interpretation_result,
                 "timestamp": datetime.datetime.now().isoformat()
             }
+            
+            # Sauvegarder le message et son interprétation dans Qdrant
+            try:
+                # Récupérer le contenu original du message et l'interprétation
+                message_content = interpretation_result.get("original_message", "")
+                lead_id = interpretation_result.get("lead_data", {}).get("lead_id", "")
+                source = interpretation_result.get("channel", "unknown")
+                interp = interpretation_result.get("interpretation", {})
+                
+                # Extraire les informations pertinentes pour les métadonnées
+                metadata = {
+                    "timestamp": datetime.datetime.now().isoformat(),
+                    "lead_id": lead_id,
+                    "source": source,
+                    "sentiment": interp.get("sentiment", "neutral"),
+                    "interest_level": interp.get("interest_level", "medium"),
+                    "do_not_contact": interp.get("do_not_contact", False),
+                    "campaign_id": interpretation_result.get("campaign_id", "")
+                }
+                
+                # Stocker dans la collection de conversations
+                if message_content:
+                    store_knowledge(
+                        content=message_content,
+                        metadata=metadata,
+                        collection_name="conversations"
+                    )
+                    self.speak(f"Message sauvegardé dans la mémoire vectorielle", target="OverseerAgent")
+            except Exception as e:
+                self.speak(f"Erreur lors de la sauvegarde dans Qdrant: {str(e)}", target="OverseerAgent")
             
             # Appel à l'OverseerAgent
             overseer_result = overseer.run(notification)

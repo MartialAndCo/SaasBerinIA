@@ -1,0 +1,46 @@
+{
+  "analysis_model": "gpt-4.1-mini",
+  "max_tasks_per_agent_per_hour": 1000,
+  "max_tasks_per_agent_per_day": 5000,
+  "detection_approach": "behavioral_analysis",
+  "security_philosophy": "permissive_intelligent",
+  
+  "behavioral_patterns_to_detect": [
+    "exponential_task_multiplication",
+    "infinite_loop_creation", 
+    "rapid_identical_tasks",
+    "suspicious_self_programming",
+    "spam_like_behavior"
+  ],
+  
+  "critical_keywords": [
+    "infinite", "loop_forever", "spam_all", "delete_everything", "crash_system"
+  ],
+  
+  "suspicious_keywords": [
+    "rapid_loop", "mass_create", "bulk_spam", "auto_infinite"
+  ],
+  
+  "behavioral_thresholds": {
+    "identical_tasks_per_minute": 20,
+    "same_action_repetition_limit": 50,
+    "recursive_self_scheduling_depth": 5,
+    "minimum_task_interval_seconds": 1
+  },
+  
+  "auto_delete_on_critical": true,
+  "auto_quarantine_on_suspect": false,
+  "alert_admin_on_critical": true,
+  
+  "permissive_mode": true,
+  "allow_all_agents_by_default": true,
+  "focus_on_patterns_not_identity": true,
+  
+  "qdrant_collection": "task_security_patterns",
+  "analysis_window_hours": 24,
+  "pattern_similarity_threshold": 0.8,
+  "confidence_threshold_for_action": 0.85,
+  "log_all_analyses": false,
+  "log_only_suspects_and_critical": true,
+  "enable_learning": true
+}

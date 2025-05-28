@@ -24,8 +24,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Import models from messenger module
 from models.messenger import Base, MailgunConfig, TwilioConfig, MessengerPerformance, MessengerDirectives
 
-# Database URL
-DATABASE_URL = "postgresql://berinia_user:bhcmi6pm@localhost/berinia_db"
+# Database URL - Utilise les informations de .env
+db_user = os.getenv("DB_USER", "berinia_user")
+db_password = os.getenv("DB_PASSWORD", "berinia_pass")
+db_host = os.getenv("DB_HOST", "localhost")
+db_port = os.getenv("DB_PORT", "5432")
+db_name = os.getenv("DB_NAME", "berinia")
+
+DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 # Create engine and session
 engine = create_engine(DATABASE_URL)

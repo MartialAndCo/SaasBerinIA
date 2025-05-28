@@ -27,6 +27,15 @@ class SystemIntegrations(Base):
     mailgun_region = Column(Enum(RegionEnum), nullable=True)
     mailgun_integration_active = Column(Boolean, default=False)
     
+    # Nouveaux champs pour Instantly.ai
+    instantly_api_key = Column(String, nullable=True)
+    from_email = Column(String, nullable=True)
+    instantly_integration_active = Column(Boolean, default=False)
+    
+    # Nouveaux champs pour WhatsApp
+    whatsapp_integration_active = Column(Boolean, default=False)
+    whatsapp_notification_group = Column(String, nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -49,6 +58,7 @@ class SystemScheduling(Base):
     report_channel_slack = Column(Boolean, default=False)
     report_channel_email = Column(Boolean, default=False)
     report_channel_dashboard = Column(Boolean, default=False)
+    report_channel_whatsapp = Column(Boolean, default=False)
     
     knowledge_trigger_frequency = Column(Enum(FrequencyEnum), nullable=True)
     max_learning_delay = Column(Integer, default=7)

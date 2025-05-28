@@ -125,6 +125,77 @@ class AgentSchedulerAgent(Agent):
         from agents.overseer.overseer_agent import OverseerAgent
         return OverseerAgent()
     
+    def _analyze_task_security(self, task_id: str, task_data: Dict[str, Any], execution_time: str, 
+                               recurring: bool, recurrence_interval: Optional[int]) -> Dict[str, Any]:
+        """
+        Analyse la sécurité d'une tâche via TaskWatchdogAgent
+        
+        Args:
+            task_id: ID de la tâche
+            task_data: Données de la tâche
+            execution_time: Heure d'exécution
+            recurring: Si la tâche est récurrente
+            recurrence_interval: Intervalle de récurrence
+            
+        Returns:
+            Résultat de l'analyse de sécurité
+        """
+        try:
+            # Importation dynamique pour éviter les dépendances circulaires
+            from agents.task_watchdog.task_watchdog_agent import TaskWatchdogAgent
+            
+            # Création de l'instance TaskWatchdogAgent
+            watchdog = TaskWatchdogAgent()
+            
+            # Préparation des données pour l'analyse
+            analysis_data = {
+                "action": "analyze_new_task",
+                "task_id": task_id,
+                "task_data": task_data,
+                "execution_time": execution_time,
+                "recurring": recurring,
+                "recurrence_interval": recurrence_interval,
+                "requesting_agent": "AgentSchedulerAgent",
+                "creation_context": "real_time_scheduling"
+            }
+            
+            # Exécution de l'analyse
+            result = watchdog.run(analysis_data)
+            
+            # Extraction de l'analyse ou valeurs par défaut
+            if result.get("status") == "success":
+                analysis = result.get("analysis", {})
+                return {
+                    "threat_level": analysis.get("threat_level", "NORMAL"),
+                    "confidence": analysis.get("confidence", 0.0),
+                    "reason": analysis.get("reason", "Analyse réussie"),
+                    "recommended_action": analysis.get("recommended_action", "ALLOW"),
+                    "patterns_detected": analysis.get("patterns_detected", []),
+                    "risk_factors": analysis.get("risk_factors", [])
+                }
+            else:
+                # En cas d'erreur du watchdog, on laisse passer par défaut
+                return {
+                    "threat_level": "NORMAL",
+                    "confidence": 0.0,
+                    "reason": f"Erreur TaskWatchdogAgent: {result.get('message', 'unknown')}",
+                    "recommended_action": "ALLOW",
+                    "patterns_detected": ["erreur_watchdog"],
+                    "risk_factors": []
+                }
+                
+        except Exception as e:
+            # En cas d'erreur critique, on log mais on laisse passer
+            self.logger.warning(f"Erreur lors de l'analyse de sécurité pour {task_id}: {e}")
+            return {
+                "threat_level": "NORMAL",
+                "confidence": 0.0,
+                "reason": f"Erreur analyse sécurité: {str(e)}",
+                "recommended_action": "ALLOW",
+                "patterns_detected": ["erreur_analyse"],
+                "risk_factors": ["erreur_technique"]
+            }
+    
     def _load_tasks(self) -> None:
         """Charge les tâches planifiées depuis le fichier de sauvegarde"""
         if not self.tasks_file.exists():
@@ -204,6 +275,25 @@ class AgentSchedulerAgent(Agent):
             if task_id is None:
                 task_id = f"task_{int(time.time())}_{self.stats['total_tasks_scheduled']}"
             
+            # NOUVEAU : Analyse de sécurité par TaskWatchdogAgent
+            security_analysis = self._analyze_task_security(
+                task_id=task_id,
+                task_data=task_data,
+                execution_time=datetime.datetime.fromtimestamp(timestamp).isoformat(),
+                recurring=recurring,
+                recurrence_interval=recurrence_interval
+            )
+            
+            # Vérification du résultat de sécurité
+            if security_analysis.get("threat_level") == "CRITICAL":
+                error_message = f"Tâche {task_id} bloquée par TaskWatchdogAgent: {security_analysis.get('reason', 'Menace critique détectée')}"
+                self.speak(error_message, target="OverseerAgent")
+                return {
+                    "status": "blocked",
+                    "message": error_message,
+                    "security_analysis": security_analysis
+                }
+            
             # Création de la tâche
             task = ScheduledTask(
                 timestamp=timestamp,
@@ -227,7 +317,7 @@ class AgentSchedulerAgent(Agent):
             # Message de log
             exec_time_str = datetime.datetime.fromtimestamp(timestamp).isoformat()
             self.speak(
-                f"Tâche {task_id} planifiée pour {exec_time_str}",
+                f"Tâche {task_id} planifiée pour {exec_time_str} (sécurité: {security_analysis.get('threat_level', 'unknown')})",
                 target="OverseerAgent"
             )
             
@@ -235,7 +325,8 @@ class AgentSchedulerAgent(Agent):
                 "status": "success",
                 "message": "Tâche planifiée avec succès",
                 "task_id": task_id,
-                "execution_time": exec_time_str
+                "execution_time": exec_time_str,
+                "security_analysis": security_analysis
             }
             
         except Exception as e:
@@ -448,16 +539,30 @@ class AgentSchedulerAgent(Agent):
                 # Si tâche récurrente, reprogrammation
                 if task.recurring and task.recurrence_interval:
                     next_execution = now + task.recurrence_interval
+                    # CORRECTION DU BUG : On réutilise le même task_id de base pour éviter la duplication
+                    base_task_id = task.task_id.split('_next_')[0] if '_next_' in task.task_id else task.task_id
                     new_task = ScheduledTask(
                         timestamp=next_execution,
                         priority=task.priority,
-                        task_id=f"{task.task_id}_next_{int(now)}",
+                        task_id=f"{base_task_id}_next_{int(next_execution)}",
+                        task_data=task.task_data.copy(),
+                        recurring=False,  # CORRECTION : Les tâches "filles" ne sont pas récurrentes
+                        recurrence_interval=None  # CORRECTION : Pas d'intervalle pour les tâches filles
+                    )
+                    heapq.heappush(self.task_queue, new_task)
+                    self.tasks_by_id[new_task.task_id] = new_task
+                    
+                    # On reprogramme aussi la tâche "mère" pour la prochaine récurrence
+                    mother_task = ScheduledTask(
+                        timestamp=next_execution,
+                        priority=task.priority,
+                        task_id=base_task_id,
                         task_data=task.task_data.copy(),
                         recurring=True,
                         recurrence_interval=task.recurrence_interval
                     )
-                    heapq.heappush(self.task_queue, new_task)
-                    self.tasks_by_id[new_task.task_id] = new_task
+                    heapq.heappush(self.task_queue, mother_task)
+                    self.tasks_by_id[base_task_id] = mother_task
                 
                 # Suppression de la référence
                 if task.task_id in self.tasks_by_id:

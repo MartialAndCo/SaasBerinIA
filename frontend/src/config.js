@@ -1,28 +1,28 @@
 /**
- * Configuration globale de l'application frontend
+* Configuration globale de l'application frontend
  */
 
-// URL de base de l'API
-export const API_BASE_URL = 'https://app.berinia.com/api';
+// URL de base de l'API (sans /api à la fin pour éviter le doublon)
+export const API_BASE_URL = 'http://localhost:8000';
 
 // Configuration des endpoints API
 export const API_ENDPOINTS = {
   // Authentification
   LOGIN: `${API_BASE_URL}/api/auth/login`,
   REGISTER: `${API_BASE_URL}/api/auth/register`,
-  
+
   // Niches
   NICHES: `${API_BASE_URL}/api/niches`,
-  
+
   // Leads
   LEADS: `${API_BASE_URL}/api/leads`,
-  
+
   // Agents
   AGENTS: `${API_BASE_URL}/api/agents`,
-  
+
   // Campagnes
   CAMPAIGNS: `${API_BASE_URL}/api/campaigns`,
-  
+
   // Dashboard
   DASHBOARD: `${API_BASE_URL}/api/dashboard`,
 };
@@ -36,4 +36,4 @@ export const DEFAULT_HEADERS = {
 };
 
 // Forcer l'utilisation des données réelles (pas de mock)
-export const USE_REAL_DATA = true; 
+export const USE_REAL_DATA = true;

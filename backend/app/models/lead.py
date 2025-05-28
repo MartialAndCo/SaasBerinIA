@@ -8,12 +8,26 @@ class Lead(Base):
     __tablename__ = "leads"
 
     id = Column(Integer, primary_key=True, index=True)
-    nom = Column(String, index=True)
+    first_name = Column(String, index=True)
+    last_name = Column(String, nullable=True)
     email = Column(String)
-    telephone = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    company = Column(String, nullable=True)
+    position = Column(String, nullable=True)
+    linkedin_url = Column(String, nullable=True)
+    website = Column(String, nullable=True)
     entreprise = Column(String, nullable=True)
-    date_creation = Column(DateTime, default=datetime.utcnow)
-    statut = Column(String, default="new")
+    industry = Column(String, nullable=True)
+    niche_id = Column(Integer, nullable=True)
+    source = Column(String, nullable=True)
+    status = Column(String, default="new")
+    score = Column(Integer, nullable=True)
+    score_details = Column(JSONB, nullable=True)
+    validation_status = Column(String, default="unvalidated")
+    last_contact = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
     
     # Champs d'analyse visuelle
     visual_score = Column(Integer, nullable=True)
@@ -29,6 +43,24 @@ class Lead(Base):
     design_strengths = Column(ARRAY(String), nullable=True)
     design_weaknesses = Column(ARRAY(String), nullable=True)
 
-    campagne_id = Column(Integer, ForeignKey("campaigns.id"))
-    campaign = relationship("Campaign", back_populates="leads")
-    messages = relationship("Message", back_populates="lead")
+    # Propriétés calculées pour compatibilité frontend
+    @property
+    def nom(self):
+        return f"{self.first_name or ''} {self.last_name or ''}".strip() or self.first_name
+    
+    @property
+    def telephone(self):
+        return self.phone
+        
+    @property
+    def statut(self):
+        return self.status
+        
+    @property
+    def date_creation(self):
+        return self.created_at
+
+    # Relations - ✅ ACTIVÉ: colonne campagne_id (cohérent avec le système)
+    campagne_id = Column(Integer, ForeignKey("campaigns.id"), nullable=True)
+    # campaign = relationship("Campaign", back_populates="leads")
+    # messages = relationship("Message", back_populates="lead")

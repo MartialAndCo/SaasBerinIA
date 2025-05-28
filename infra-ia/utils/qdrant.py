@@ -3,6 +3,7 @@ Module pour l'interaction avec la base de données vectorielle Qdrant
 """
 import os
 import time
+import uuid
 import numpy as np
 from typing import List, Dict, Any, Optional, Union
 from qdrant_client import QdrantClient
@@ -131,7 +132,7 @@ def search_similar(collection_name: str, query_vector: List[float], limit: int =
 
 def add_to_collection(collection_name: str, text: str, metadata: Dict[str, Any]) -> bool:
     """
-    Ajoute un document à une collection
+    ✅ CORRECTION: Ajoute un document à une collection avec UUID valide
     
     Args:
         collection_name: Nom de la collection
@@ -146,8 +147,8 @@ def add_to_collection(collection_name: str, text: str, metadata: Dict[str, Any])
     # Créer l'embedding
     embedding = create_embedding(text)
     
-    # Générer un ID unique basé sur l'horodatage et un hash du texte
-    point_id = f"{int(time.time())}_{abs(hash(text)) % 10000000}"
+    # ✅ CORRECTION: Générer un UUID valide pour Qdrant
+    point_id = str(uuid.uuid4())
     
     # Construire le payload
     payload = {
@@ -285,7 +286,7 @@ class QdrantService:
         
     def store_knowledge(self, document: str, metadata: Dict[str, Any], collection_name: str = "knowledge"):
         """
-        Stocke un document dans la collection de connaissances
+        ✅ CORRECTION: Stocke un document avec UUID valide
         
         Args:
             document: Le document à stocker
@@ -307,12 +308,15 @@ class QdrantService:
             **metadata
         }
         
+        # ✅ CORRECTION: Utiliser UUID valide
+        point_id = metadata.get("id", str(uuid.uuid4()))
+        
         # Stockage dans Qdrant
         self.client.upsert(
             collection_name=collection_name,
             points=[
                 models.PointStruct(
-                    id=metadata.get("id", str(hash(document))),
+                    id=point_id,
                     vector=embedding,
                     payload=payload
                 )

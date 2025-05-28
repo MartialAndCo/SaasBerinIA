@@ -1,4 +1,10 @@
-import { Cloud, Database, Globe, MessageSquare, Save, Slack, Webhook } from "lucide-react"
+import { Bot, Cloud, Database, Globe, MessageSquare, Save, Slack, Webhook, Mail, Key, Clock, Shield, Play, Trash2 } from "lucide-react"
+import { Suspense } from "react"
+import EnvVariablesTab from "./env-variables-tab"
+import SettingsWrapper from "./page-wrapper"
+import dynamic from 'next/dynamic'
+import ServicesClient from "./services-client"
+import TaskManagement from "@/components/tasks/TaskManagement"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,7 +15,8 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
-export default function SettingsPage() {
+// Composant interne avec le contenu original
+function SettingsContent() {
   return (
     <div className="flex flex-col gap-5 w-full">
       <div className="flex items-center justify-between">
@@ -30,6 +37,7 @@ export default function SettingsPage() {
           <TabsTrigger value="api">API</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="scheduling">Planification</TabsTrigger>
+          <TabsTrigger value="tasks">Tâches</TabsTrigger>
         </TabsList>
         
         <TabsContent value="general" className="space-y-4">
@@ -117,88 +125,39 @@ export default function SettingsPage() {
               <CardDescription>Configurez les intégrations avec des services externes</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                      <MessageSquare className="h-5 w-5 text-red-600 dark:text-red-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium">Twilio</h3>
-                      <p className="text-sm text-muted-foreground">Intégration SMS et communications</p>
-                    </div>
-                  </div>
-                  <Switch id="twilio-integration" />
-                </div>
-                <div className="pl-12 space-y-2">
-                  <Label htmlFor="twilio-api-key">Clé API Twilio</Label>
-                  <Input 
-                    id="twilio-api-key" 
-                    placeholder="Entrez votre clé API Twilio" 
-                  />
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Label htmlFor="twilio-account-sid" className="min-w-[100px]">
-                      Account SID
-                    </Label>
-                    <Input 
-                      id="twilio-account-sid" 
-                      placeholder="Entrez votre Account SID" 
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Label htmlFor="twilio-auth-token" className="min-w-[100px]">
-                      Auth Token
-                    </Label>
-                    <Input 
-                      id="twilio-auth-token" 
-                      type="password"
-                      placeholder="Entrez votre Auth Token" 
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Intégration du composant de variables d'environnement */}
+              <EnvVariablesTab />
               <Separator />
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                      <Cloud className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                      <MessageSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium">Mailgun</h3>
-                      <p className="text-sm text-muted-foreground">Intégration d'envoi d'emails</p>
+                      <h3 className="text-lg font-medium">WhatsApp</h3>
+                      <p className="text-sm text-muted-foreground">Intégration de messagerie WhatsApp</p>
                     </div>
                   </div>
-                  <Switch id="mailgun-integration" />
+                  <Switch id="whatsapp-integration" />
                 </div>
                 <div className="pl-12 space-y-2">
-                  <Label htmlFor="mailgun-api-key">Clé API Mailgun</Label>
-                  <Input 
-                    id="mailgun-api-key" 
-                    placeholder="Entrez votre clé API Mailgun" 
-                  />
                   <div className="flex items-center space-x-2 mt-2">
-                    <Label htmlFor="mailgun-domain" className="min-w-[100px]">
-                      Nom de domaine
+                    <Label htmlFor="whatsapp-notification-group" className="min-w-[150px]">
+                      Groupe de notification
                     </Label>
                     <Input 
-                      id="mailgun-domain" 
-                      placeholder="Ex: mg.votredomaine.com" 
+                      id="whatsapp-notification-group" 
+                      placeholder="ID du groupe WhatsApp pour les notifications" 
                     />
                   </div>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Label htmlFor="mailgun-region" className="min-w-[100px]">
-                      Région
-                    </Label>
-                    <Select>
-                      <SelectTrigger id="mailgun-region">
-                        <SelectValue placeholder="Sélectionnez une région" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="us">États-Unis</SelectItem>
-                        <SelectItem value="eu">Europe</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="flex justify-between mt-4">
+                    <div className="text-sm">
+                      Statut de connexion: <span className="text-green-500 font-medium">Connecté</span>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Reconnecter
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -324,26 +283,34 @@ https://app.berinia.com"
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Notifications système</h3>
+                <h3 className="text-lg font-medium">Notifications WhatsApp</h3>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="notify-new-leads">Nouveaux leads</Label>
+                    <div>
+                      <Label htmlFor="notify-new-leads">Nouveaux leads</Label>
+                      <p className="text-xs text-muted-foreground">Groupe: 📊 Performances & Stats</p>
+                    </div>
                     <Switch id="notify-new-leads" defaultChecked />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="notify-campaign-status">Changement de statut des campagnes</Label>
+                    <div>
+                      <Label htmlFor="notify-campaign-status">Statut des campagnes</Label>
+                      <p className="text-xs text-muted-foreground">Groupe: 🛠️ Logs techniques</p>
+                    </div>
                     <Switch id="notify-campaign-status" defaultChecked />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="notify-agent-error">Erreurs des agents</Label>
+                    <div>
+                      <Label htmlFor="notify-agent-error">Erreurs des agents</Label>
+                      <p className="text-xs text-muted-foreground">Groupe: 🛠️ Logs techniques</p>
+                    </div>
                     <Switch id="notify-agent-error" defaultChecked />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="notify-pivot-recommendation">Recommandations de pivot</Label>
-                    <Switch id="notify-pivot-recommendation" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="notify-system-error">Erreurs système</Label>
+                    <div>
+                      <Label htmlFor="notify-system-error">Erreurs système</Label>
+                      <p className="text-xs text-muted-foreground">Groupe: 📣 Annonces officielles</p>
+                    </div>
                     <Switch id="notify-system-error" defaultChecked />
                   </div>
                 </div>
@@ -555,6 +522,16 @@ alerts@berinia.com"
                   </div>
                 </div>
               </div>
+              <Separator />
+              {/* Composant pour les services */}
+              <Suspense fallback={
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              }>
+                {/* Importer le composant client qui utilise dynamic import */}
+                <ServicesClient />
+              </Suspense>
             </CardContent>
             <CardFooter className="flex justify-end">
               <Button variant="outline" className="mr-2">
@@ -567,7 +544,39 @@ alerts@berinia.com"
             </CardFooter>
           </Card>
         </TabsContent>
+        
+        {/* ONGLET TACHES AVEC DONNEES REELLES - PLUS DE MOCK DATA */}
+        <TabsContent value="tasks" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Gestion des Tâches Planifiées
+              </CardTitle>
+              <CardDescription>Gérez et surveillez toutes les tâches automatisées du système BerinIA</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              {/* Composant intelligent qui récupère les vraies données */}
+              <TaskManagement />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+// Composant principal qui utilise le wrapper pour connecter à l'API
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    }>
+      <SettingsWrapper>
+        <SettingsContent />
+      </SettingsWrapper>
+    </Suspense>
   )
 }

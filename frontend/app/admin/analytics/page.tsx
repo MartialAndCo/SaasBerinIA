@@ -52,7 +52,7 @@ export default function AnalyticsPage() {
     const fetchStats = async () => {
       try {
         setLoading(true)
-        const response = await apiRequest('/stats/overview')
+        const response = await apiRequest('/api/stats/overview')
         setStats(response)
         setError(null)
       } catch (err) {
@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
       
       // Récupérer les statistiques générales et les données pour les graphiques en parallèle
       const [statsResponse, conv, leads, camps, niches] = await Promise.all([
-        apiRequest('/stats/overview'),
+        apiRequest('/api/stats/overview'),
         apiRequest(`/stats/conversion?period=${period}`),
         apiRequest(`/stats/leads?period=${period}`),
         apiRequest(`/stats/campaigns?period=${period}`),

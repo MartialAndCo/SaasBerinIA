@@ -50,24 +50,37 @@ interface DashboardData {
   }
 }
 
-interface RecentActivityItem {
+interface RealAgent {
   id: number
-  type: "campaign" | "lead" | "niche" | "agent"
-  action: string
-  description: string
-  timestamp: string
+  name: string
+  status: "active" | "warning" | "error"
+  lastRun: string
+  leads: number | null
+  type: string
 }
 
-interface ConversionDataPoint {
-  date: string;
-  value: number;
-  // add other properties as needed
+interface RealCampaign {
+  id: number
+  name: string
+  progress: number
+  status: "active" | "warning" | "error"
+  leads: number
+  target: number
+}
+
+interface RealNotification {
+  type: "error" | "warning" | "success"
+  title: string
+  description: string
+  timestamp: string
+  agent_id?: number
 }
 
 export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
-  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([])
-  const [conversionData, setConversionData] = useState<ConversionDataPoint[]>([])
+  const [realAgents, setRealAgents] = useState<RealAgent[]>([])
+  const [realCampaigns, setRealCampaigns] = useState<RealCampaign[]>([])
+  const [realNotifications, setRealNotifications] = useState<RealNotification[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
@@ -79,33 +92,27 @@ export default function DashboardPage() {
         setLoading(true)
         
         // Récupérer les données générales du dashboard
-        const dashboardResponse = await apiRequest('/dashboard/metrics')
-        // Validate response structure before setting state
+        const dashboardResponse = await apiRequest('/api/dashboard/metrics')
         if (dashboardResponse && typeof dashboardResponse === 'object') {
           setDashboardData(dashboardResponse)
-        } else {
-          console.error("Invalid dashboard response format:", dashboardResponse)
-          setError("Format de données du tableau de bord invalide")
         }
         
-        // Récupérer les activités récentes
-        const activityResponse = await apiRequest('/logs/recent')
-        // Ensure activity response is an array
-        if (Array.isArray(activityResponse)) {
-          setRecentActivity(activityResponse)
-        } else {
-          console.error("Invalid activity response format:", activityResponse)
-          setRecentActivity([])
+        // Récupérer les vrais agents détaillés
+        const agentsResponse = await apiRequest('/api/agents-extended/detailed')
+        if (Array.isArray(agentsResponse)) {
+          setRealAgents(agentsResponse)
         }
         
-        // Récupérer les données de conversion pour le graphique
-        const conversionResponse = await apiRequest('/stats/conversion?period=30d')
-        // Ensure conversion data is an array
-        if (Array.isArray(conversionResponse)) {
-          setConversionData(conversionResponse)
-        } else {
-          console.error("Invalid conversion response format:", conversionResponse)
-          setConversionData([])
+        // Récupérer les vraies campagnes actives
+        const campaignsResponse = await apiRequest('/api/stats/real-campaigns')
+        if (Array.isArray(campaignsResponse)) {
+          setRealCampaigns(campaignsResponse)
+        }
+        
+        // Récupérer les vraies notifications des agents
+        const notificationsResponse = await apiRequest('/api/agents-extended/activity')
+        if (Array.isArray(notificationsResponse)) {
+          setRealNotifications(notificationsResponse)
         }
         
         setError(null)
@@ -153,7 +160,7 @@ export default function DashboardPage() {
               <StatusCard
                 title="Leads collectés"
                 value={(dashboardData?.leads?.total || 0).toString()}
-                description="Aujourd'hui"
+                description="Total dans la base"
                 trend={dashboardData?.leads?.trend || "neutral"}
                 trendValue={dashboardData?.leads?.trendValue || "0%"}
                 icon={<MessageSquare className="h-4 w-4 text-muted-foreground" />}
@@ -174,16 +181,13 @@ export default function DashboardPage() {
                 icon={<Bot className="h-4 w-4 text-muted-foreground" />}
               />
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <DashboardChart className="col-span-4" data={conversionData} />
-              <RecentActivity className="col-span-3" data={recentActivity} />
-            </div>
+            
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
               <Card className="col-span-3">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <div className="space-y-1">
                     <CardTitle>Campagnes en cours</CardTitle>
-                    <CardDescription>Statut des campagnes actives</CardDescription>
+                    <CardDescription>Statut des campagnes actives (données réelles)</CardDescription>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -202,66 +206,65 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { name: "Agences immobilières Paris", progress: 78, status: "active" },
-                      { name: "Avocats d'affaires Lyon", progress: 45, status: "active" },
-                      { name: "Architectes Bordeaux", progress: 92, status: "active" },
-                      { name: "Consultants RH Lille", progress: 24, status: "warning" },
-                      { name: "Cliniques vétérinaires", progress: 62, status: "active" },
-                    ].map((campaign) => (
-                      <div key={campaign.name} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <div
-                              className={`h-2 w-2 rounded-full ${
-                                campaign.status === "active"
-                                  ? "bg-green-500"
-                                  : campaign.status === "warning"
-                                    ? "bg-yellow-500"
-                                    : "bg-red-500"
-                              }`}
-                            />
-                            <span className="text-sm font-medium">{campaign.name}</span>
+                    {realCampaigns.length > 0 ? (
+                      realCampaigns.map((campaign) => (
+                        <div key={campaign.id} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className={`h-2 w-2 rounded-full ${
+                                  campaign.status === "active"
+                                    ? "bg-green-500"
+                                    : campaign.status === "warning"
+                                      ? "bg-yellow-500"
+                                      : "bg-red-500"
+                                }`}
+                              />
+                              <span className="text-sm font-medium">{campaign.name}</span>
+                            </div>
+                            <span className="text-sm text-muted-foreground">{campaign.progress}%</span>
                           </div>
-                          <span className="text-sm text-muted-foreground">{campaign.progress}%</span>
+                          <Progress value={campaign.progress} className="h-1" />
+                          <div className="text-xs text-muted-foreground">
+                            {campaign.leads}/{campaign.target} leads collectés
+                          </div>
                         </div>
-                        <Progress value={campaign.progress} className="h-1" />
+                      ))
+                    ) : (
+                      <div className="text-center text-muted-foreground py-6">
+                        <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>Aucune campagne active</p>
+                        <p className="text-sm">Créez votre première campagne pour commencer</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button variant="outline" className="w-full" asChild>
                     <Link href="/admin/campaigns">
                       <FolderOpen className="mr-2 h-4 w-4" />
-                      Voir toutes les campagnes
+                      Gérer les campagnes
                     </Link>
                   </Button>
                 </CardFooter>
               </Card>
+              
               <Card className="col-span-4">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <div className="space-y-1">
                     <CardTitle>Statut des agents</CardTitle>
-                    <CardDescription>Activité et performance des agents IA</CardDescription>
+                    <CardDescription>Activité et performance des agents IA (données réelles)</CardDescription>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
                     <RefreshCw className="mr-2 h-3 w-3" />
                     Actualiser
                   </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { name: "Scraper Agent", status: "active", lastRun: "Il y a 5 minutes", leads: 342 },
-                      { name: "Cleaner Agent", status: "active", lastRun: "Il y a 12 minutes", leads: 342 },
-                      { name: "Pivot Agent", status: "active", lastRun: "Il y a 30 minutes", leads: null },
-                      { name: "Analytics Agent", status: "error", lastRun: "Il y a 1 heure", leads: null },
-                      { name: "Outreach Agent", status: "active", lastRun: "Il y a 15 minutes", leads: 128 },
-                      { name: "Monitoring Agent", status: "warning", lastRun: "Il y a 45 minutes", leads: null },
-                    ].map((agent) => (
+                    {realAgents.slice(0, 6).map((agent) => (
                       <div
-                        key={agent.name}
+                        key={agent.id}
                         className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3 last:border-0 last:pb-0"
                       >
                         <div className="flex items-center space-x-3">
@@ -315,145 +318,201 @@ export default function DashboardPage() {
                 </CardContent>
                 <CardFooter>
                   <Button variant="outline" className="w-full" asChild>
-                    <Link href="/dashboard/agents">
+                    <Link href="/admin/agents">
                       <Bot className="mr-2 h-4 w-4" />
-                      Gérer les agents
+                      Gérer tous les agents ({realAgents.length})
                     </Link>
                   </Button>
                 </CardFooter>
               </Card>
             </div>
           </TabsContent>
+          
           <TabsContent value="analytics" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card className="w-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Taux de conversion</CardTitle>
+                  <CardTitle className="text-sm font-medium">Agents actifs</CardTitle>
                   <div className="rounded-md bg-green-100 dark:bg-green-900 p-1">
-                    <ArrowUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <Bot className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">8.2%</div>
-                  <p className="text-xs text-muted-foreground">+2.1% par rapport au mois dernier</p>
+                  <div className="text-2xl font-bold">{dashboardData?.agents?.active || 0}</div>
+                  <p className="text-xs text-muted-foreground">sur {dashboardData?.agents?.total || 0} agents totaux</p>
                 </CardContent>
               </Card>
               <Card className="w-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Taux d'ouverture</CardTitle>
-                  <div className="rounded-md bg-green-100 dark:bg-green-900 p-1">
-                    <ArrowUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <CardTitle className="text-sm font-medium">Leads collectés</CardTitle>
+                  <div className="rounded-md bg-blue-100 dark:bg-blue-900 p-1">
+                    <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">24.5%</div>
-                  <p className="text-xs text-muted-foreground">+4.3% par rapport au mois dernier</p>
+                  <div className="text-2xl font-bold">{dashboardData?.leads?.total || 0}</div>
+                  <p className="text-xs text-muted-foreground">Total en base de données</p>
                 </CardContent>
               </Card>
               <Card className="w-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Taux de réponse</CardTitle>
-                  <div className="rounded-md bg-red-100 dark:bg-red-900 p-1">
-                    <ArrowDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <CardTitle className="text-sm font-medium">Campagnes</CardTitle>
+                  <div className="rounded-md bg-purple-100 dark:bg-purple-900 p-1">
+                    <FolderOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12.8%</div>
-                  <p className="text-xs text-muted-foreground">-1.5% par rapport au mois dernier</p>
+                  <div className="text-2xl font-bold">{dashboardData?.campaigns?.active || 0}</div>
+                  <p className="text-xs text-muted-foreground">campagnes actives</p>
                 </CardContent>
               </Card>
               <Card className="w-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Coût par lead</CardTitle>
-                  <div className="rounded-md bg-green-100 dark:bg-green-900 p-1">
-                    <ArrowDown className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <CardTitle className="text-sm font-medium">Niches explorées</CardTitle>
+                  <div className="rounded-md bg-orange-100 dark:bg-orange-900 p-1">
+                    <Globe className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">2.35€</div>
-                  <p className="text-xs text-muted-foreground">-0.45€ par rapport au mois dernier</p>
+                  <div className="text-2xl font-bold">{dashboardData?.niches?.explored || 0}</div>
+                  <p className="text-xs text-muted-foreground">niches découvertes</p>
                 </CardContent>
               </Card>
             </div>
             <Card className="w-full">
               <CardHeader>
-                <CardTitle>Performances détaillées</CardTitle>
-                <CardDescription>Analyse des performances par campagne et par niche</CardDescription>
+                <CardTitle>Performances en temps réel</CardTitle>
+                <CardDescription>Métriques basées sur vos vraies données</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Contenu détaillé des performances à venir...</p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium">Types d'agents</h4>
+                      <div className="space-y-2 mt-2">
+                        {["orchestrator", "supervisor", "worker", "strategic", "system", "interface"].map((type) => {
+                          const count = realAgents.filter(a => a.type === type).length
+                          return count > 0 ? (
+                            <div key={type} className="flex justify-between text-sm">
+                              <span className="capitalize">{type}s</span>
+                              <span>{count}</span>
+                            </div>
+                          ) : null
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium">Status des agents</h4>
+                      <div className="space-y-2 mt-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-green-600">Actifs</span>
+                          <span>{realAgents.filter(a => a.status === 'active').length}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-yellow-600">Avertissements</span>
+                          <span>{realAgents.filter(a => a.status === 'warning').length}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-red-600">Erreurs</span>
+                          <span>{realAgents.filter(a => a.status === 'error').length}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
+          
           <TabsContent value="reports" className="space-y-4">
             <Card className="w-full">
               <CardHeader>
-                <CardTitle>Rapports générés</CardTitle>
-                <CardDescription>Rapports hebdomadaires et mensuels</CardDescription>
+                <CardTitle>Rapports système</CardTitle>
+                <CardDescription>Rapports basés sur vos données réelles</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Liste des rapports à venir...</p>
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-2">Rapport d'activité des agents</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      État actuel : {realAgents.length} agents configurés, {realAgents.filter(a => a.status === 'active').length} actifs
+                    </p>
+                    <Button size="sm" variant="outline">
+                      Générer le rapport détaillé
+                    </Button>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-2">Rapport de performance</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Leads collectés : {dashboardData?.leads?.total || 0}, Campagnes : {dashboardData?.campaigns?.active || 0}
+                    </p>
+                    <Button size="sm" variant="outline">
+                      Exporter en PDF
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
+          
           <TabsContent value="notifications" className="space-y-4">
             <Card className="w-full">
               <CardHeader>
                 <CardTitle>Notifications système</CardTitle>
-                <CardDescription>Alertes et notifications importantes</CardDescription>
+                <CardDescription>Alertes basées sur l'activité réelle des agents</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-start space-x-4 rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-100 dark:border-red-800">
-                    <div className="rounded-full bg-red-100 dark:bg-red-900 p-1">
-                      <Bot className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Analytics Agent en erreur</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        L'agent Analytics a rencontré une erreur lors de l'analyse des données. Erreur: API timeout.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" variant="outline" className="h-7 text-xs">
-                          <RefreshCw className="mr-1 h-3 w-3" />
-                          Relancer l'agent
-                        </Button>
+                  {realNotifications.length > 0 ? (
+                    realNotifications.map((notification, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-start space-x-4 rounded-md p-4 border ${
+                          notification.type === "error"
+                            ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800"
+                            : notification.type === "warning"
+                              ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-800"
+                              : "bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800"
+                        }`}
+                      >
+                        <div
+                          className={`rounded-full p-1 ${
+                            notification.type === "error"
+                              ? "bg-red-100 dark:bg-red-900"
+                              : notification.type === "warning"
+                                ? "bg-yellow-100 dark:bg-yellow-900"
+                                : "bg-green-100 dark:bg-green-900"
+                          }`}
+                        >
+                          <Bot
+                            className={`h-4 w-4 ${
+                              notification.type === "error"
+                                ? "text-red-600 dark:text-red-400"
+                                : notification.type === "warning"
+                                  ? "text-yellow-600 dark:text-yellow-400"
+                                  : "text-green-600 dark:text-green-400"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{notification.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{notification.description}</p>
+                          <div className="mt-2">
+                            <Button size="sm" variant="outline" className="h-7 text-xs">
+                              Voir les détails
+                            </Button>
+                          </div>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-6">
+                      <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Aucune notification récente</p>
+                      <p className="text-sm">Vos agents fonctionnent correctement</p>
                     </div>
-                  </div>
-                  <div className="flex items-start space-x-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-4 border border-yellow-100 dark:border-yellow-800">
-                    <div className="rounded-full bg-yellow-100 dark:bg-yellow-900 p-1">
-                      <Bot className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Monitoring Agent: Avertissement</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Le taux de réponse pour la campagne "Consultants RH Lille" est inférieur au seuil défini.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" variant="outline" className="h-7 text-xs">
-                          Voir la campagne
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4 rounded-md bg-green-50 dark:bg-green-900/20 p-4 border border-green-100 dark:border-green-800">
-                    <div className="rounded-full bg-green-100 dark:bg-green-900 p-1">
-                      <Bot className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Pivot Agent: Recommandation</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        La niche "Architectes Bordeaux" montre un excellent potentiel. Recommandation d'augmenter le
-                        budget.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" variant="outline" className="h-7 text-xs">
-                          Appliquer la recommandation
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

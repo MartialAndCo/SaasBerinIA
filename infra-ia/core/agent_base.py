@@ -8,8 +8,6 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
 
-from utils.logger import agent_message
-
 class Agent:
     """
     Classe de base pour tous les agents du système BerinIA
@@ -106,7 +104,7 @@ class Agent:
     
     def speak(self, message: str, target: Optional[str] = None, context_id: Optional[str] = None, level: str = "INFO") -> None:
         """
-        Envoie un message dans le canal de communication des agents
+        Envoie un message dans le canal de communication des agents - NOUVEAU SYSTÈME UNIFIÉ
 
         Args:
             message: Le message à envoyer
@@ -114,23 +112,55 @@ class Agent:
             context_id: ID de contexte (campagne, niche, etc.)
             level: Niveau de log (INFO, WARNING, ERROR, DEBUG)
         """
-        from agents.logger.logger_agent import LoggerAgent
-        from utils.logger import agent_message as new_agent_message
-
-        # Log via l'ancien système (compatibilité)
-        LoggerAgent.log_interaction(
-            from_agent=self.name,
-            to_agent=target,
-            message=message,
-            context_id=context_id,
-            metadata={"level": level}
-        )
-        
-        # Log via le nouveau système directement
         try:
-            new_agent_message(self.name, message, target, level)
+            # Utilisation du nouveau système unifié PostgreSQL + fichiers avec rotation
+            from utils.unified_logging import unified_logger
+            
+            unified_logger.agent_message(
+                agent_name=self.name,
+                message=message,
+                target=target,
+                level=level,
+                context_id=context_id
+            )
+            
         except Exception as e:
-            print(f"Erreur lors du logging via le nouveau système: {str(e)}")
+            # Fallback vers le print en cas d'erreur critique
+            print(f"[{self.name}] → {target or 'ALL'}: {message} (Logging error: {e})")
+    
+    def log_system(self, message: str, level: str = "INFO", details: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Log un message système de l'agent
+        
+        Args:
+            message: Message à logger
+            level: Niveau du log (INFO, WARNING, ERROR, DEBUG)
+            details: Détails supplémentaires en JSON
+        """
+        try:
+            from utils.unified_logging import unified_logger
+            
+            unified_logger.system_message(
+                module=self.name,
+                message=message,
+                level=level,
+                details=details
+            )
+            
+        except Exception as e:
+            print(f"[{self.name}] System log error: {e}")
+    
+    def log_error(self, message: str, details: Optional[Dict[str, Any]] = None) -> None:
+        """Méthode de convenance pour logger une erreur"""
+        self.log_system(message, "ERROR", details)
+    
+    def log_warning(self, message: str, details: Optional[Dict[str, Any]] = None) -> None:
+        """Méthode de convenance pour logger un avertissement"""
+        self.log_system(message, "WARNING", details)
+    
+    def log_info(self, message: str, details: Optional[Dict[str, Any]] = None) -> None:
+        """Méthode de convenance pour logger une information"""
+        self.log_system(message, "INFO", details)
     
     def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """

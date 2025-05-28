@@ -1,8 +1,8 @@
 [
   {
-    "timestamp": 1746546657.761755,
+    "timestamp": 1748464873.691001,
     "priority": 1,
-    "task_id": "task_1746460257_0",
+    "task_id": "pivot_strategy_weekly",
     "task_data": {
       "agent": "PivotStrategyAgent",
       "action": "recommend_optimizations",
@@ -17,196 +17,9 @@
     "recurrence_interval": 604800
   },
   {
-    "timestamp": 1746546746.084929,
+    "timestamp": 1748477241.9692664,
     "priority": 1,
-    "task_id": "task_1746460346_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746549315.569827,
-    "priority": 1,
-    "task_id": "task_1746462915_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746547962.315286,
-    "priority": 1,
-    "task_id": "task_1746461562_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746551653.03927,
-    "priority": 1,
-    "task_id": "task_1746465253_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746553218.219999,
-    "priority": 1,
-    "task_id": "task_1746466818_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746549544.784877,
-    "priority": 1,
-    "task_id": "task_1746463144_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746553344.130001,
-    "priority": 1,
-    "task_id": "task_1746466944_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746553206.113695,
-    "priority": 1,
-    "task_id": "task_1746466806_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746553460.38933,
-    "priority": 1,
-    "task_id": "task_1746467060_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746552946.088429,
-    "priority": 1,
-    "task_id": "task_1746466546_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746616131.41672,
-    "priority": 1,
-    "task_id": "task_1746529731_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746572931.416746,
-    "priority": 1,
-    "task_id": "task_1746529731_1",
+    "task_id": "task_1748261226_1",
     "task_data": {
       "agent": "ProspectionSupervisor",
       "action": "list",
@@ -216,26 +29,21 @@
     "recurrence_interval": 86400
   },
   {
-    "timestamp": 1746618728.449332,
+    "timestamp": 1748477241.9692664,
     "priority": 1,
-    "task_id": "task_1746532328_0",
+    "task_id": "task_1748261226_1_next_1748477241",
     "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
     },
-    "recurring": true,
-    "recurrence_interval": 604800
+    "recurring": false,
+    "recurrence_interval": null
   },
   {
-    "timestamp": 1746575528.449367,
+    "timestamp": 1748477302.244607,
     "priority": 1,
-    "task_id": "task_1746532328_1",
+    "task_id": "task_1748261275_1",
     "task_data": {
       "agent": "ProspectionSupervisor",
       "action": "list",
@@ -245,26 +53,9 @@
     "recurrence_interval": 86400
   },
   {
-    "timestamp": 1746622353.745583,
+    "timestamp": 1748477302.244607,
     "priority": 1,
-    "task_id": "task_1746535953_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746579153.745611,
-    "priority": 1,
-    "task_id": "task_1746535953_1",
+    "task_id": "task_1748261255_1",
     "task_data": {
       "agent": "ProspectionSupervisor",
       "action": "list",
@@ -274,26 +65,9 @@
     "recurrence_interval": 86400
   },
   {
-    "timestamp": 1746627082.789696,
+    "timestamp": 1748477241.9692664,
     "priority": 1,
-    "task_id": "task_1746540682_0",
-    "task_data": {
-      "agent": "PivotStrategyAgent",
-      "action": "recommend_optimizations",
-      "params": {
-        "target": "all",
-        "optimization_type": "all",
-        "days_back": 7,
-        "include_details": true
-      }
-    },
-    "recurring": true,
-    "recurrence_interval": 604800
-  },
-  {
-    "timestamp": 1746583882.78971,
-    "priority": 1,
-    "task_id": "task_1746540682_1",
+    "task_id": "task_1748261216_1",
     "task_data": {
       "agent": "ProspectionSupervisor",
       "action": "list",
@@ -303,9 +77,225 @@
     "recurrence_interval": 86400
   },
   {
-    "timestamp": 1746627924.407695,
+    "timestamp": 1748477241.9692664,
     "priority": 1,
-    "task_id": "task_1746541524_0",
+    "task_id": "task_1748261216_1_next_1748477241",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261265_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261285_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261403_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261364_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261343_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261304_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261245_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261257_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261295_1_next_1748477302",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261236_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261314_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261333_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261414_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261363_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261385_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748496337.5532513,
+    "priority": 1,
+    "task_id": "task_1748280300_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477484.3744318,
+    "priority": 1,
+    "task_id": "task_1748261435_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748952468.6971216,
+    "priority": 1,
+    "task_id": "task_1748261245_0_next_1748347668",
     "task_data": {
       "agent": "PivotStrategyAgent",
       "action": "recommend_optimizations",
@@ -320,9 +310,958 @@
     "recurrence_interval": 604800
   },
   {
-    "timestamp": 1746584724.407722,
+    "timestamp": 1748952468.6971216,
     "priority": 1,
-    "task_id": "task_1746541524_1",
+    "task_id": "task_1748261255_0_next_1748347668",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261396_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748952651.294769,
+    "priority": 1,
+    "task_id": "task_1748261451_0_next_1748347851",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952529.5762844,
+    "priority": 1,
+    "task_id": "task_1748261323_0_next_1748347729",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952529.5762844,
+    "priority": 1,
+    "task_id": "task_1748261314_0_next_1748347729",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748494356.0473115,
+    "priority": 1,
+    "task_id": "task_1748278327_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261255_1_next_1748477302",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261265_1_next_1748477302",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261275_1_next_1748477302",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261285_1_next_1748477302",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261314_1_next_1748477363",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261333_1_next_1748477363",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261343_1_next_1748477363",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261354_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261364_1_next_1748477423",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261375_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261396_1_next_1748477423",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477484.3744318,
+    "priority": 1,
+    "task_id": "task_1748261451_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477484.3744318,
+    "priority": 1,
+    "task_id": "task_1748261425_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748487151.2051506,
+    "priority": 1,
+    "task_id": "task_1748271102_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748508105.8412175,
+    "priority": 1,
+    "task_id": "prospection_daily_next_1748508105",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748952651.294769,
+    "priority": 1,
+    "task_id": "task_1748261403_0_next_1748347851",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952468.6971216,
+    "priority": 1,
+    "task_id": "task_1748261226_0_next_1748347668",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952590.3372004,
+    "priority": 1,
+    "task_id": "task_1748261333_0_next_1748347790",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952529.5762844,
+    "priority": 1,
+    "task_id": "task_1748261304_0_next_1748347729",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952651.294769,
+    "priority": 1,
+    "task_id": "task_1748261435_0_next_1748347851",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952468.6971216,
+    "priority": 1,
+    "task_id": "task_1748261257_0_next_1748347668",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952651.294769,
+    "priority": 1,
+    "task_id": "task_1748261425_0_next_1748347851",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952651.294769,
+    "priority": 1,
+    "task_id": "task_1748261414_0_next_1748347851",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748962318.9487107,
+    "priority": 1,
+    "task_id": "task_1748271102_0_next_1748357518",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748969584.2776115,
+    "priority": 1,
+    "task_id": "task_1748278327_0_next_1748364784",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952651.294769,
+    "priority": 1,
+    "task_id": "task_1748261396_0_next_1748347851",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952590.3372004,
+    "priority": 1,
+    "task_id": "task_1748261363_0_next_1748347790",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748953312.5779529,
+    "priority": 1,
+    "task_id": "task_1748262092_0_next_1748348512",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748971505.9749672,
+    "priority": 1,
+    "task_id": "task_1748280300_0_next_1748366705",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952529.5762844,
+    "priority": 1,
+    "task_id": "task_1748261275_0_next_1748347729",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952590.3372004,
+    "priority": 1,
+    "task_id": "task_1748261385_0_next_1748347790",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952590.3372004,
+    "priority": 1,
+    "task_id": "task_1748261343_0_next_1748347790",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261245_1_next_1748477302",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748952468.6971216,
+    "priority": 1,
+    "task_id": "task_1748261265_0_next_1748347668",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261295_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748952590.3372004,
+    "priority": 1,
+    "task_id": "task_1748261354_0_next_1748347790",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748952468.6971216,
+    "priority": 1,
+    "task_id": "task_1748261216_0_next_1748347668",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261236_1_next_1748477302",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477302.244607,
+    "priority": 1,
+    "task_id": "task_1748261257_1_next_1748477302",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748952590.3372004,
+    "priority": 1,
+    "task_id": "task_1748261364_0_next_1748347790",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261304_1_next_1748477363",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261323_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261323_1_next_1748477363",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748478145.2907794,
+    "priority": 1,
+    "task_id": "task_1748262092_1",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": true,
+    "recurrence_interval": 86400
+  },
+  {
+    "timestamp": 1748952529.5762844,
+    "priority": 1,
+    "task_id": "task_1748261295_0_next_1748347729",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748477363.0245576,
+    "priority": 1,
+    "task_id": "task_1748261354_1_next_1748477363",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261403_1_next_1748477423",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261414_1_next_1748477423",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748952468.6971216,
+    "priority": 1,
+    "task_id": "task_1748261236_0_next_1748347668",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261375_1_next_1748477423",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261385_1_next_1748477423",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477423.6318882,
+    "priority": 1,
+    "task_id": "task_1748261363_1_next_1748477423",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748952529.5762844,
+    "priority": 1,
+    "task_id": "task_1748261285_0_next_1748347729",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748477484.3744318,
+    "priority": 1,
+    "task_id": "task_1748261451_1_next_1748477484",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477484.3744318,
+    "priority": 1,
+    "task_id": "task_1748261435_1_next_1748477484",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748477484.3744318,
+    "priority": 1,
+    "task_id": "task_1748261425_1_next_1748477484",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748478145.2907794,
+    "priority": 1,
+    "task_id": "task_1748262092_1_next_1748478145",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748487151.2051506,
+    "priority": 1,
+    "task_id": "task_1748271102_1_next_1748487151",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748494356.0473115,
+    "priority": 1,
+    "task_id": "task_1748278327_1_next_1748494356",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748496337.5532513,
+    "priority": 1,
+    "task_id": "task_1748280300_1_next_1748496337",
+    "task_data": {
+      "agent": "ProspectionSupervisor",
+      "action": "list",
+      "params": {}
+    },
+    "recurring": false,
+    "recurrence_interval": null
+  },
+  {
+    "timestamp": 1748952590.3372004,
+    "priority": 1,
+    "task_id": "task_1748261375_0_next_1748347790",
+    "task_data": {
+      "agent": "PivotStrategyAgent",
+      "action": "recommend_optimizations",
+      "params": {
+        "target": "all",
+        "optimization_type": "all",
+        "days_back": 7,
+        "include_details": true
+      }
+    },
+    "recurring": true,
+    "recurrence_interval": 604800
+  },
+  {
+    "timestamp": 1748508105.8412175,
+    "priority": 1,
+    "task_id": "prospection_daily",
     "task_data": {
       "agent": "ProspectionSupervisor",
       "action": "list",

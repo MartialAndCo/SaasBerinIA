@@ -8,16 +8,13 @@ from typing import Dict, Any, Optional, List, Tuple
 import datetime
 import uuid
 import time
-import httpx
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from twilio.rest import Client  # Ajout de l'import du SDK Twilio
+from twilio.rest import Client  # SDK Twilio pour SMS
 from pathlib import Path
 
 from core.agent_base import Agent
 from utils.llm import LLMService
 from core.db import DatabaseService
+from utils.api_clients.instantly_client import InstantlyClient  # Import du client Instantly.ai
 
 class MessagingAgent(Agent):
     """
@@ -130,27 +127,23 @@ class MessagingAgent(Agent):
     
     def _init_email_client(self):
         """
-        Initialise le client d'envoi d'emails (SMTP ou API)
+        Initialise le client d'envoi d'emails (Instantly.ai)
         """
         # Configuration email depuis config ou variables d'environnement
         email_config = self.config.get("email", {})
         
-        self.email_service = email_config.get("service", "smtp")
+        self.email_service = email_config.get("service", "instantly")
         
-        if self.email_service == "smtp":
-            self.smtp_config = {
-                "server": email_config.get("smtp_server") or os.getenv("SMTP_SERVER", ""),
-                "port": email_config.get("smtp_port") or int(os.getenv("SMTP_PORT", "587")),
-                "user": email_config.get("smtp_user") or os.getenv("SMTP_USER", ""),
-                "password": email_config.get("smtp_password") or os.getenv("SMTP_PASSWORD", ""),
-                "from_email": email_config.get("from_email") or os.getenv("FROM_EMAIL", "")
-            }
-        elif self.email_service == "mailgun":
-            self.mailgun_config = {
-                "api_key": email_config.get("mailgun_api_key") or os.getenv("MAILGUN_API_KEY", ""),
-                "domain": email_config.get("mailgun_domain") or os.getenv("MAILGUN_DOMAIN", ""),
-                "from_email": email_config.get("from_email") or os.getenv("FROM_EMAIL", "")
-            }
+        if self.email_service == "instantly":
+            api_key = email_config.get("instantly_api_key") or os.getenv("INSTANTLY_API_KEY", "")
+            self.from_email = email_config.get("from_email") or os.getenv("FROM_EMAIL", "")
+            
+            if not api_key:
+                self.speak("Clé API Instantly.ai manquante. L'envoi d'emails échouera.", target="ProspectionSupervisor")
+            
+            # Initialisation du client Instantly.ai
+            self.instantly_client = InstantlyClient(api_key=api_key)
+            self.speak("Client Instantly.ai initialisé", target="ProspectionSupervisor")
         else:
             self.speak(f"Service email non supporté: {self.email_service}", target="ProspectionSupervisor")
     
@@ -467,127 +460,61 @@ class MessagingAgent(Agent):
             return False, "Contenu du message vide"
         
         # Envoi selon le service configuré
-        if self.email_service == "smtp":
-            return self._send_email_smtp(recipient_email, subject, content, campaign_id)
-        elif self.email_service == "mailgun":
-            return self._send_email_mailgun(recipient_email, subject, content, campaign_id)
+        if self.email_service == "instantly":
+            return self._send_email_instantly(recipient_email, subject, content, campaign_id, lead)
         else:
             return False, f"Service email non supporté: {self.email_service}"
     
-    def _send_email_smtp(self, recipient: str, subject: str, body: str, campaign_id: str) -> tuple[bool, str]:
+    def _send_email_instantly(self, recipient: str, subject: str, body: str, campaign_id: str, lead: Dict[str, Any] = None) -> tuple[bool, str]:
         """
-        Envoie un email via SMTP
+        Envoie un email via l'API Instantly.ai
         
         Args:
             recipient: L'email du destinataire
             subject: Le sujet du message
-            body: Le corps du message
+            body: Le corps du message HTML
             campaign_id: L'ID de la campagne
+            lead: Données du lead (optionnel) pour les variables personnalisées
             
         Returns:
             Tuple (succès, erreur)
         """
         # Simulation de l'envoi si en mode test
         if self.config.get("test_mode", True):
-            self.speak(f"[MODE TEST] Email envoyé à {recipient} (SMTP)", target="ProspectionSupervisor")
+            self.speak(f"[MODE TEST] Email envoyé à {recipient} (Instantly.ai)", target="ProspectionSupervisor")
             time.sleep(0.1)  # Légère pause pour simuler l'envoi
             return True, ""
         
-        # Vérification de la configuration SMTP
-        if not all([
-            self.smtp_config.get("server"),
-            self.smtp_config.get("port"),
-            self.smtp_config.get("user"),
-            self.smtp_config.get("password"),
-            self.smtp_config.get("from_email")
-        ]):
-            return False, "Configuration SMTP incomplète"
-        
         try:
-            # Création du message
-            msg = MIMEMultipart()
-            msg["From"] = self.smtp_config["from_email"]
-            msg["To"] = recipient
-            msg["Subject"] = subject
-            
-            # Ajout d'un ID de tracking pour le suivi des réponses
+            # Génération d'un ID de tracking unique
             tracking_id = str(uuid.uuid4())
-            msg["X-Campaign-ID"] = campaign_id
-            msg["X-Tracking-ID"] = tracking_id
             
-            # Ajout du corps du message
-            msg.attach(MIMEText(body, "html"))
+            # Préparation des variables personnalisées (métadonnées) pour le suivi
+            custom_variables = {}
             
-            # Connexion au serveur SMTP
-            with smtplib.SMTP(self.smtp_config["server"], self.smtp_config["port"]) as server:
-                server.starttls()
-                server.login(self.smtp_config["user"], self.smtp_config["password"])
-                server.send_message(msg)
+            # Si des données de lead sont fournies, les ajouter comme variables personnalisées
+            if lead:
+                # Filtrer pour ne garder que ce qui est utile et convertible en string
+                for key, value in lead.items():
+                    if isinstance(value, (str, int, float, bool)) and key not in ["email"]:
+                        custom_variables[key] = str(value)
             
+            # Envoi de l'email via le client Instantly.ai
+            response = self.instantly_client.send_email(
+                recipient=recipient,
+                subject=subject,
+                html_content=body,
+                from_email=self.from_email,
+                campaign_id=campaign_id,
+                tracking_id=tracking_id,
+                custom_variables=custom_variables
+            )
+            
+            self.speak(f"Email envoyé via Instantly.ai à {recipient}", target="ProspectionSupervisor")
             return True, ""
             
         except Exception as e:
-            error_msg = f"Erreur SMTP: {str(e)}"
-            self.speak(error_msg, target="ProspectionSupervisor")
-            return False, error_msg
-    
-    def _send_email_mailgun(self, recipient: str, subject: str, body: str, campaign_id: str) -> tuple[bool, str]:
-        """
-        Envoie un email via l'API Mailgun
-        
-        Args:
-            recipient: L'email du destinataire
-            subject: Le sujet du message
-            body: Le corps du message
-            campaign_id: L'ID de la campagne
-            
-        Returns:
-            Tuple (succès, erreur)
-        """
-        # Simulation de l'envoi si en mode test
-        if self.config.get("test_mode", True):
-            self.speak(f"[MODE TEST] Email envoyé à {recipient} (Mailgun)", target="ProspectionSupervisor")
-            time.sleep(0.1)  # Légère pause pour simuler l'envoi
-            return True, ""
-        
-        # Vérification de la configuration Mailgun
-        if not all([
-            self.mailgun_config.get("api_key"),
-            self.mailgun_config.get("domain"),
-            self.mailgun_config.get("from_email")
-        ]):
-            return False, "Configuration Mailgun incomplète"
-        
-        try:
-            # Construction de l'URL de l'API
-            api_url = f"https://api.mailgun.net/v3/{self.mailgun_config['domain']}/messages"
-            
-            # Génération d'un ID de tracking
-            tracking_id = str(uuid.uuid4())
-            
-            # Construction du payload
-            data = {
-                "from": self.mailgun_config["from_email"],
-                "to": recipient,
-                "subject": subject,
-                "html": body,
-                "h:X-Campaign-ID": campaign_id,
-                "h:X-Tracking-ID": tracking_id
-            }
-            
-            # Envoi de la requête
-            auth = ("api", self.mailgun_config["api_key"])
-            
-            with httpx.Client(timeout=60.0) as client:
-                response = client.post(api_url, data=data, auth=auth)
-                
-                if response.status_code != 200:
-                    return False, f"Erreur Mailgun: {response.status_code} - {response.text}"
-            
-            return True, ""
-            
-        except Exception as e:
-            error_msg = f"Erreur Mailgun: {str(e)}"
+            error_msg = f"Erreur Instantly.ai: {str(e)}"
             self.speak(error_msg, target="ProspectionSupervisor")
             return False, error_msg
     
@@ -1139,6 +1066,7 @@ class MessagingAgent(Agent):
         message = input_data.get("message", "")
         campaign_id = input_data.get("campaign_id", "")
         channel = input_data.get("channel", "sms")  # Par défaut, on répond par SMS
+        message_id = input_data.get("message_id")  # ID du message original pour les réponses par email
         
         if not lead:
             return {
@@ -1166,7 +1094,24 @@ class MessagingAgent(Agent):
         if channel == "email":
             # Ajout d'un sujet pour les emails
             message_data["subject"] = f"Re: {input_data.get('subject', 'Votre message')}"
-            success, error = self._send_email(lead, message_data, campaign_id)
+            
+            # Si un ID de message est fourni et que nous utilisons Instantly, utiliser la méthode de réponse
+            if message_id and self.email_service == "instantly" and not self.config.get("test_mode", True):
+                try:
+                    response = self.instantly_client.reply_to_email(
+                        reply_to_uuid=message_id,
+                        subject=message_data["subject"],
+                        html_content=response_content,
+                        from_email=self.from_email
+                    )
+                    success, error = True, ""
+                except Exception as e:
+                    self.speak(f"Erreur lors de la réponse via Instantly.ai: {str(e)}", target="ProspectionSupervisor")
+                    # Fallback à la méthode standard
+                    success, error = self._send_email(lead, message_data, campaign_id)
+            else:
+                # Méthode standard d'envoi
+                success, error = self._send_email(lead, message_data, campaign_id)
         else:  # Par défaut, on utilise le SMS
             success, error = self._send_sms(lead, message_data, campaign_id)
         
