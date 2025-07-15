@@ -41,3 +41,9 @@ whatsapp-bot/.wwebjs_auth/
 infra-ia/agents/meeting/token.pickle
 infra-ia/agents/meeting/config.json
 infra-ia/agents/meeting/credentials.json
+
+# Fichiers sensibles ignorés
+infra-ia/agents/meeting/token.pickle
+infra-ia/agents/meeting/config.json
+infra-ia/agents/meeting/credentials.json
+infra-ia/documentation/agents/meeting-agent.md
