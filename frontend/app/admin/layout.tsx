@@ -79,6 +79,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       current: pathname === "/admin/leads",
     },
     {
+      name: "CRM Kanban",
+      href: "/admin/crm",
+      icon: LayoutDashboard,
+      current: pathname === "/admin/crm",
+    },
+    {
       name: "Messagerie",
       href: "/admin/messaging",
       icon: Mail,

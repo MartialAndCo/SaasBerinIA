@@ -21,8 +21,12 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 # Add the backend directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import models from messenger module
-from models.messenger import Base, MailgunConfig, TwilioConfig, MessengerPerformance, MessengerDirectives
+# Import all models to ensure they're registered with the metadata
+from app.database.base_class import Base
+from app.models.campaign import Campaign
+from app.models.niche import Niche
+from app.models.lead import Lead
+from models.messenger import MessengerDirectives
 
 # Database URL - Utilise les informations de .env
 db_user = os.getenv("DB_USER", "berinia_user")

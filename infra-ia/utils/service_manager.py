@@ -25,7 +25,6 @@ class ServiceManager:
         "berinia-api.service",
         "berinia-next.service",
         "berinia-webhook.service",
-        "berinia-whatsapp.service",
         "berinia-qdrant.service",
         "berinia-agents.service",
         "berinia-scheduler.service"
@@ -36,7 +35,6 @@ class ServiceManager:
         "berinia-api.service": "API backend principale",
         "berinia-next.service": "Frontend Next.js",
         "berinia-webhook.service": "Serveur webhook pour réception d'événements externes",
-        "berinia-whatsapp.service": "Intégration WhatsApp",
         "berinia-qdrant.service": "Base de données vectorielle Qdrant",
         "berinia-agents.service": "Environnement d'exécution des agents IA",
         "berinia-scheduler.service": "Planificateur de tâches"

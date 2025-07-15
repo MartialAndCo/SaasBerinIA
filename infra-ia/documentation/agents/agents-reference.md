@@ -40,17 +40,6 @@ Ce document fournit une référence complète de tous les agents disponibles dan
 - **Fichier**: `agents/admin_interpreter/admin_interpreter_agent.py`
 - **Interactions principales**: OverseerAgent, utilisateur humain
 
-### MetaAgent
-
-- **Rôle**: Système d'intelligence conversationnelle central
-- **Responsabilités**:
-  - Analyser les demandes en langage naturel
-  - Découvrir automatiquement les capacités du système
-  - Router intelligemment les demandes
-  - Maintenir le contexte des conversations
-- **Fichier**: `agents/meta/meta_agent.py`
-- **Interactions principales**: Tous les agents du système
-- **Voir aussi**: [MetaAgent - Documentation détaillée](meta-agent.md)
 
 ### AgentSchedulerAgent
 

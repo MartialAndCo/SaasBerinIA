@@ -51,8 +51,7 @@ La structure du système suit une hiérarchie claire :
 | **Twilio** | Envoi de SMS | API de communication SMS |
 | **PostgreSQL** | Base de données relationnelle | Stockage des leads, campagnes, messages |
 | **Qdrant** | Base de données vectorielle | Stockage des connaissances et embeddings |
-| **WhatsApp-web.js** | Client WhatsApp | Communication via WhatsApp |
-| **FastAPI** | Serveur de webhooks | Réception des événements (emails, SMS, WhatsApp) |
+| **FastAPI** | Serveur de webhooks | Réception des événements (emails, SMS) |
 
 ### 3.2 Structure du code
 
@@ -67,7 +66,6 @@ berinia/
 │   │   ├── follow_up/          # Gère les relances
 │   │   ├── logger/             # Enregistre les interactions
 │   │   ├── messaging/          # Envoie les messages
-│   │   ├── meta/               # Agent central d'intelligence
 │   │   ├── niche_explorer/     # Explore les niches
 │   │   ├── niche_classifier/   # Classe et personnalise par niches
 │   │   ├── overseer/           # Supervise le système
@@ -102,20 +100,6 @@ berinia/
 - Délègue aux superviseurs spécialisés
 - Communique avec l'AgentSchedulerAgent pour planifier des tâches
 
-#### MetaAgent
-
-**Rôle** : Intelligence conversationnelle centralisée
-
-**Fonctionnalités** :
-- Analyse les demandes utilisateur en langage naturel
-- Comprend les intentions et le contexte des messages
-- Route les requêtes vers les agents appropriés
-- Point central d'entrée pour les interactions WhatsApp et SMS
-
-**Points d'intégration** :
-- Interface avec le webhook WhatsApp
-- Communique avec le DatabaseQueryAgent pour les requêtes de données
-- Transmet des résultats à l'OverseerAgent
 
 #### AdminInterpreterAgent
 
@@ -187,7 +171,6 @@ berinia/
 - Génère des réponses formatées à partir des données
 
 **Points d'intégration** :
-- Utilisé par le MetaAgent pour répondre aux questions
 - Interface avec PostgreSQL pour les requêtes
 - Formate les résultats pour les autres agents
 
@@ -217,7 +200,6 @@ berinia/
 **Points d'intégration** :
 - API Mailgun pour les emails
 - API Twilio pour les SMS
-- API WhatsApp pour la messagerie instantanée
 
 #### ResponseInterpreterAgent
 
@@ -232,6 +214,38 @@ berinia/
 - Reçoit des messages du ResponseListenerAgent
 - Utilise le LLM pour l'analyse
 - Communique les résultats au ProspectionSupervisor
+
+#### TaskWatchdogAgent
+
+**Rôle** : Gardien de la sécurité des tâches planifiées du système
+
+**Fonctionnalités** :
+- Analyse en temps réel chaque tâche créée dans le système
+- Détection d'anomalies et de comportements suspects via LLM
+- Approche "permissive" : autorise par défaut, bloque les vraies menaces
+- Focus sur les patterns comportementaux (duplication, fréquence excessive)
+- Stockage des analyses en mémoire vectorielle (Qdrant)
+- Actions automatiques selon le niveau de menace (NORMAL/SUSPECT/CRITICAL)
+- Apprentissage continu des patterns de sécurité
+
+**Critères de sécurité surveillés** :
+- **Duplication** : Détecte >5 tâches similaires récentes
+- **Fréquence** : Alerte si intervalle <300 secondes (5min)
+- **Mots-clés critiques/suspects** : Surveillance du contenu des actions
+- **Volume** : Détection de création massive de tâches
+- **Récurrence anormale** : Patterns de répétition suspects
+
+**Points d'intégration** :
+- Surveille toutes les créations de tâches via AgentSchedulerAgent
+- Utilise LLM (GPT-4) pour analyse comportementale intelligente
+- Stockage en Qdrant pour mémoire vectorielle des patterns
+- Communication avec OverseerAgent pour alertes
+- Interface avec AdminInterpreterAgent pour notifications critiques
+
+**Actions automatiques** :
+- **NORMAL** : Autorisation silencieuse (mode permissif)
+- **SUSPECT** : Surveillance renforcée + alerte
+- **CRITICAL** : Suppression automatique de la tâche + alerte admin
 
 ## 5. Interactions et flux de données
 
@@ -256,11 +270,6 @@ berinia/
 
 ### 5.2 Réception et traitement des webhooks
 
-#### Webhook WhatsApp
-
-```
-Client WhatsApp → WhatsApp Bot → Webhook FastAPI → WhatsApp Webhook Handler → MetaAgent → Agents spécifiques → Réponse
-```
 
 #### Webhook Email (Mailgun)
 
@@ -354,13 +363,6 @@ Qdrant est utilisé pour stocker :
 - Numéro d'expéditeur configuré
 - Webhook pour réception des réponses
 
-### 7.3 WhatsApp Integration
-
-**Utilisation** : Communication bidirectionnelle via WhatsApp
-**Configuration** :
-- Service basé sur whatsapp-web.js
-- Authentification par QR code
-- Webhook pour traitement des messages
 
 ## 8. Gestion des erreurs et debuggage
 
@@ -392,7 +394,6 @@ Le système supporte nativement les sources suivantes :
 - Apollo (leads B2B)
 - LinkedIn (via Apify)
 - Sites web génériques (via Apify)
-- WhatsApp (messages et réponses)
 - Email (via Mailgun)
 - SMS (via Twilio)
 
@@ -417,28 +418,19 @@ Le système supporte nativement les sources suivantes :
 6. Le ResponseInterpreterAgent analyse les réponses reçues
 7. Les leads intéressés sont transférés au CRM
 
-### 9.3 Interaction via WhatsApp
-
-1. Un utilisateur envoie un message WhatsApp
-2. Le webhook reçoit le message et le transmet au MetaAgent
-3. Le MetaAgent analyse l'intention et le contexte
-4. Si nécessaire, le DatabaseQueryAgent est consulté pour les données
-5. Une réponse intelligente est générée et renvoyée
-6. L'interaction est loggée pour analyse future
 
 ## 10. Améliorations récentes et roadmap
 
 ### 10.1 Améliorations récentes
 
-- Intégration du MetaAgent comme point d'entrée pour WhatsApp
 - Meilleure gestion des erreurs avec exposition des détails
 - Normalisation du format des contextes entre agents
 - Correction des problèmes de communication entre agents
+- Nettoyage et simplification de l'architecture
 
 ### 10.2 Roadmap future
 
-- Threads de conversation pour WhatsApp (conservation du contexte)
 - Support multilingue avec détection automatique
-- Reconnaissance d'images pour WhatsApp
 - Monitoring avancé des performances
 - Cache des réponses fréquentes
+- Interface conversationnelle améliorée

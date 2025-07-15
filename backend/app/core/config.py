@@ -42,6 +42,11 @@ class Settings:
     AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN", "votre-tenant.auth0.com")
     AUTH0_AUDIENCE = os.getenv("AUTH0_AUDIENCE", "https://api.berinia.com")
     
+    # Configuration Stripe
+    STRIPE_SECRET_KEY: str = os.getenv("STRIPE_API_KEY", "")
+    STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+    STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str) and not v.startswith("["):
@@ -75,3 +80,7 @@ class Settings:
 
 # Instance unique des paramètres, à importer partout dans l'application
 settings = Settings()
+
+# Fonction pour récupérer les paramètres (utilisée par certains endpoints)
+def get_settings() -> Settings:
+    return settings

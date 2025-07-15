@@ -39,25 +39,18 @@ def get_webhook_agents():
     if registry.initialized:
         logger.info("Registre d'agents déjà initialisé, récupération des agents existants")
 
-        # Récupérer les agents existants
+        # Récupérer ou créer les agents selon les besoins
         for agent_name in all_agent_names:
-            agent = registry.get(agent_name)
-            if agent:
-                agents[agent_name] = agent
-                logger.info(f"Agent {agent_name} récupéré du registre")
-            else:
-                # Créer l'agent s'il n'existe pas déjà
-                logger.warning(f"Agent {agent_name} non trouvé dans le registre, création...")
-                try:
-                    agent = registry.get_or_create(agent_name)
-                    if agent:
-                        agents[agent_name] = agent
-                        logger.info(f"Agent {agent_name} créé avec succès")
-                    else:
-                        logger.error(f"Impossible de créer l'agent {agent_name}")
-                except Exception as e:
-                    logger.error(f"Erreur lors de la création de l'agent {agent_name}: {str(e)}")
-                    logger.error(traceback.format_exc())
+            try:
+                agent = registry.get_or_create(agent_name)
+                if agent:
+                    agents[agent_name] = agent
+                    logger.info(f"Agent {agent_name} disponible")
+                else:
+                    logger.error(f"Impossible de créer l'agent {agent_name}")
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération/création de l'agent {agent_name}: {str(e)}")
+                logger.error(traceback.format_exc())
 
     else:
         logger.info("Initialisation de tous les agents pour le webhook...")

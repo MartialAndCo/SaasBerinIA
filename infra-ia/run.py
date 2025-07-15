@@ -302,12 +302,8 @@ def main():
         logger.info("Démarrage du scheduler ignoré (--no-scheduler)")
     
     # Démarrage du serveur de webhooks si demandé
-    if not args.no_webhook:
-        webhook_started = start_webhook_server(config)
-        if not webhook_started:
-            logger.warning("Le serveur de webhooks n'a pas pu démarrer correctement")
-    else:
-        logger.info("Démarrage du serveur de webhooks ignoré (--no-webhook)")
+    # DÉSACTIVÉ : Conflit avec berinia-webhook.service
+    logger.info("Démarrage du serveur de webhooks ignoré (désactivé pour éviter conflit de port)")
     
     end_time = time.time()
     elapsed = end_time - start_time

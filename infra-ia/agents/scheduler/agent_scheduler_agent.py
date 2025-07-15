@@ -15,20 +15,28 @@ from pathlib import Path
 
 from core.agent_base import Agent
 from utils.llm import LLMService
+from .task_types import TaskType, TaskBehavior, TaskFactory
+from .advanced_methods import AdvancedSchedulerMethods
 
 class ScheduledTask:
     """
-    Classe représentant une tâche planifiée avec sa priorité
+    Classe représentant une tâche planifiée avec sa priorité et son comportement avancé
     """
     def __init__(self, timestamp: float, priority: int, task_id: str, 
                  task_data: Dict[str, Any], recurring: bool = False, 
-                 recurrence_interval: int = None):
+                 recurrence_interval: int = None, task_behavior: Optional[TaskBehavior] = None):
         self.timestamp = timestamp
         self.priority = priority
         self.task_id = task_id
         self.task_data = task_data
         self.recurring = recurring
         self.recurrence_interval = recurrence_interval  # en secondes
+        
+        # NOUVEAU : Comportement avancé de la tâche
+        self.task_behavior = task_behavior or TaskFactory.create_one_time()
+        self.creation_time = timestamp  # Temps de création pour le turnover
+        self.execution_count = 0  # Nombre d'exécutions
+        self.last_execution = None  # Timestamp de dernière exécution
     
     def __lt__(self, other):
         # Tri d'abord par timestamp, puis par priorité (plus petit = plus prioritaire)
@@ -59,7 +67,7 @@ class ScheduledTask:
             recurrence_interval=data.get("recurrence_interval")
         )
 
-class AgentSchedulerAgent(Agent):
+class AgentSchedulerAgent(Agent, AdvancedSchedulerMethods):
     """
     AgentSchedulerAgent - Agent responsable de la planification et de l'exécution des tâches
     
@@ -91,8 +99,8 @@ class AgentSchedulerAgent(Agent):
         # Verrou pour la synchronisation entre threads
         self.queue_lock = threading.Lock()
         
-        # Chemin vers le fichier de sauvegarde des tâches
-        self.tasks_file = Path(self.config.get("tasks_file", "data/scheduled_tasks.json"))
+        # Chemin vers le fichier de sauvegarde des tâches (CORRIGÉ : utilise tasks.json)
+        self.tasks_file = Path(self.config.get("tasks_file", "data/tasks.json"))
         
         # Scheduler pour la planification des tâches
         self.scheduler = sched.scheduler(time.time, time.sleep)
@@ -196,8 +204,68 @@ class AgentSchedulerAgent(Agent):
                 "risk_factors": ["erreur_technique"]
             }
     
+    def _convert_frontend_task(self, frontend_task: Dict[str, Any]) -> Optional[ScheduledTask]:
+        """Convertit une tâche du format frontend vers le format AgentSchedulerAgent"""
+        try:
+            # Conversion du schedule en timestamp et récurrence
+            schedule = frontend_task.get("schedule", "daily")
+            next_run_str = frontend_task.get("next_run")
+            
+            if next_run_str:
+                # Utiliser next_run si disponible
+                try:
+                    next_run = datetime.datetime.fromisoformat(next_run_str.replace('Z', '+00:00'))
+                    timestamp = next_run.timestamp()
+                except:
+                    # Si problème de parsing, calculer à partir de maintenant
+                    now = datetime.datetime.now()
+                    timestamp = (now + datetime.timedelta(days=1)).timestamp()
+            else:
+                # Calculer à partir de maintenant + schedule
+                now = datetime.datetime.now()
+                if schedule == "daily":
+                    timestamp = (now + datetime.timedelta(days=1)).timestamp()
+                elif schedule == "weekly":
+                    timestamp = (now + datetime.timedelta(weeks=1)).timestamp()
+                elif schedule == "hourly":
+                    timestamp = (now + datetime.timedelta(hours=1)).timestamp()
+                else:
+                    timestamp = (now + datetime.timedelta(days=1)).timestamp()
+            
+            # Déterminer l'intervalle de récurrence selon le schedule
+            if schedule == "daily":
+                recurrence_interval = 86400
+            elif schedule == "weekly":
+                recurrence_interval = 604800
+            elif schedule == "hourly":
+                recurrence_interval = 3600
+            else:
+                recurrence_interval = 86400  # Par défaut daily
+            
+            # Construction des task_data à partir des params
+            task_params = frontend_task.get("params", {})
+            task_data = {
+                "agent": frontend_task.get("agent", "unknown"),
+                "action": task_params.get("action", "unknown"),
+                "params": task_params.get("params", {})
+            }
+            
+            # Création de la ScheduledTask
+            return ScheduledTask(
+                timestamp=timestamp,
+                priority=1,  # Priorité normale par défaut
+                task_id=frontend_task.get("task_id", "unknown"),
+                task_data=task_data,
+                recurring=True,  # Les tâches frontend sont généralement récurrentes
+                recurrence_interval=recurrence_interval
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Erreur conversion tâche frontend: {e}")
+            return None
+    
     def _load_tasks(self) -> None:
-        """Charge les tâches planifiées depuis le fichier de sauvegarde"""
+        """Charge les tâches planifiées depuis le fichier de sauvegarde (avec adaptateur de format)"""
         if not self.tasks_file.exists():
             # Création du répertoire parent si nécessaire
             if not self.tasks_file.parent.exists():
@@ -213,16 +281,23 @@ class AgentSchedulerAgent(Agent):
                 self.tasks_by_id = {}
                 
                 for task_data in tasks_data:
-                    task = ScheduledTask.from_dict(task_data)
+                    task = None
                     
-                    # Ne pas charger les tâches déjà expirées
-                    if task.timestamp > time.time():
+                    # Détecter le format de la tâche
+                    if "timestamp" in task_data:
+                        # Format AgentSchedulerAgent (ancien)
+                        task = ScheduledTask.from_dict(task_data)
+                    else:
+                        # Format frontend (nouveau) - conversion nécessaire
+                        task = self._convert_frontend_task(task_data)
+                    
+                    if task and task.timestamp > time.time():
                         heapq.heappush(self.task_queue, task)
                         self.tasks_by_id[task.task_id] = task
                 
                 self.stats["tasks_in_queue"] = len(self.task_queue)
                 
-                self.speak(f"Chargement de {len(self.task_queue)} tâches planifiées.", target="OverseerAgent")
+                self.speak(f"Chargement de {len(self.task_queue)} tâches planifiées (format adapté).", target="OverseerAgent")
         except Exception as e:
             error_message = f"Erreur lors du chargement des tâches: {str(e)}"
             self.speak(error_message, target="OverseerAgent")
@@ -264,7 +339,10 @@ class AgentSchedulerAgent(Agent):
         """
         try:
             # Conversion du moment d'exécution en timestamp si nécessaire
-            if isinstance(execution_time, datetime.datetime):
+            if execution_time is None:
+                # Si pas de temps d'exécution, planifier pour dans 1 minute
+                timestamp = (datetime.datetime.now() + datetime.timedelta(minutes=1)).timestamp()
+            elif isinstance(execution_time, datetime.datetime):
                 timestamp = execution_time.timestamp()
             elif isinstance(execution_time, str):
                 timestamp = datetime.datetime.fromisoformat(execution_time).timestamp()
@@ -294,14 +372,16 @@ class AgentSchedulerAgent(Agent):
                     "security_analysis": security_analysis
                 }
             
-            # Création de la tâche
+            # Création de la tâche (avec comportement par défaut)
+            task_behavior = TaskFactory.create_one_time()
             task = ScheduledTask(
                 timestamp=timestamp,
                 priority=priority,
                 task_id=task_id,
                 task_data=task_data,
                 recurring=recurring,
-                recurrence_interval=recurrence_interval
+                recurrence_interval=recurrence_interval,
+                task_behavior=task_behavior
             )
             
             # Ajout de la tâche à la file
@@ -536,35 +616,26 @@ class AgentSchedulerAgent(Agent):
                 task = heapq.heappop(self.task_queue)
                 tasks_to_execute.append(task)
                 
-                # Si tâche récurrente, reprogrammation
+                # CORRECTION DU BUG : Logique de récurrence simplifiée sans duplication
                 if task.recurring and task.recurrence_interval:
                     next_execution = now + task.recurrence_interval
-                    # CORRECTION DU BUG : On réutilise le même task_id de base pour éviter la duplication
                     base_task_id = task.task_id.split('_next_')[0] if '_next_' in task.task_id else task.task_id
-                    new_task = ScheduledTask(
-                        timestamp=next_execution,
-                        priority=task.priority,
-                        task_id=f"{base_task_id}_next_{int(next_execution)}",
-                        task_data=task.task_data.copy(),
-                        recurring=False,  # CORRECTION : Les tâches "filles" ne sont pas récurrentes
-                        recurrence_interval=None  # CORRECTION : Pas d'intervalle pour les tâches filles
-                    )
-                    heapq.heappush(self.task_queue, new_task)
-                    self.tasks_by_id[new_task.task_id] = new_task
                     
-                    # On reprogramme aussi la tâche "mère" pour la prochaine récurrence
-                    mother_task = ScheduledTask(
+                    # Créer UNE SEULE tâche pour la prochaine exécution
+                    next_task = ScheduledTask(
                         timestamp=next_execution,
                         priority=task.priority,
-                        task_id=base_task_id,
+                        task_id=base_task_id,  # Garde le même ID de base
                         task_data=task.task_data.copy(),
-                        recurring=True,
+                        recurring=True,  # Reste récurrente
                         recurrence_interval=task.recurrence_interval
                     )
-                    heapq.heappush(self.task_queue, mother_task)
-                    self.tasks_by_id[base_task_id] = mother_task
+                    heapq.heappush(self.task_queue, next_task)
+                    self.tasks_by_id[base_task_id] = next_task
+                    
+                    self.logger.info(f"Tâche récurrente {base_task_id} reprogrammée pour {datetime.datetime.fromtimestamp(next_execution).isoformat()}")
                 
-                # Suppression de la référence
+                # Suppression de la référence de la tâche exécutée
                 if task.task_id in self.tasks_by_id:
                     del self.tasks_by_id[task.task_id]
             
@@ -663,6 +734,18 @@ class AgentSchedulerAgent(Agent):
         elif action == "stop_scheduler":
             # Arrêt du scheduler
             return self.stop_scheduler()
+        
+        elif action == "schedule_advanced_task":
+            # NOUVEAU : Planification avec types avancés
+            return self.schedule_advanced_task(input_data)
+        
+        elif action == "cleanup_expired_tasks":
+            # NOUVEAU : Nettoyage des tâches expirées
+            return self.cleanup_expired_tasks()
+        
+        elif action == "get_task_types_info":
+            # NOUVEAU : Informations sur les types de tâches
+            return self.get_task_types_info()
         
         elif action == "get_stats":
             # Récupération des statistiques

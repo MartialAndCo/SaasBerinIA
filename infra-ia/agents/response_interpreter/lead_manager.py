@@ -57,10 +57,9 @@ class LeadManager:
             return self.create_external_lead_from_sms(phone_number, message_content), True
             
         except Exception as e:
-            # En cas d'erreur, création d'un ID temporaire
+            # En cas d'erreur, retourner None
             print(f"Erreur lors de la recherche du lead: {str(e)}")
-            temp_id = f"ext_{int(time.time())}"
-            return temp_id, True
+            return None, True
     
     def create_external_lead_from_sms(self, phone_number: str, message_content: str = "") -> str:
         """
@@ -74,30 +73,38 @@ class LeadManager:
             ID du lead créé
         """
         try:
-            # Génération d'un ID unique pour le lead externe
-            new_lead_id = f"ext_{int(time.time())}"
+            # Insertion dans la base de données avec RETURNING pour récupérer l'ID auto-généré
+            insert_query = """
+                INSERT INTO leads (phone, source, status, created_at, notes)
+                VALUES (:phone, :source, :status, :created_at, :notes)
+                RETURNING id
+            """
             
-            # Création du record lead
-            lead_record = {
-                "id": new_lead_id,
-                "phone": phone_number,
-                "source": "sms_entrant",
-                "status": "nouveau",
-                "created_at": datetime.datetime.now().isoformat(),
-                "type": "lead_externe",
-                "first_message": message_content[:500] if message_content else ""  # Limiter la taille
-            }
+            # Utiliser une connexion directe avec commit pour assurer la persistance
+            import sqlalchemy as sa
+            from core.db import engine
             
-            # Insertion dans la base de données
-            self.db.insert("leads", lead_record)
+            with engine.connect() as connection:
+                sql = sa.text(insert_query)
+                result = connection.execute(sql, {
+                    "phone": phone_number,
+                    "source": "sms_entrant",
+                    "status": "nouveau",
+                    "created_at": datetime.datetime.now().isoformat(),
+                    "notes": f"Lead externe créé depuis SMS. Premier message: {message_content[:200] if message_content else 'N/A'}"
+                })
+                connection.commit()
+                result_row = result.fetchone()
+            
+            new_lead_id = result_row[0] if result_row else None
             
             print(f"Nouveau lead externe créé: {new_lead_id} pour le numéro {phone_number}")
             return new_lead_id
             
         except Exception as e:
-            # En cas d'erreur, retourner l'ID généré quand même
+            # En cas d'erreur, retourner None
             print(f"Erreur lors de la création du lead externe: {str(e)}")
-            return new_lead_id
+            return None
     
     def get_or_create_lead_from_email(self, email: str, message_content: str = "") -> Tuple[str, bool]:
         """
@@ -119,27 +126,35 @@ class LeadManager:
                 return existing_lead["id"], False
                 
             # L'email n'existe pas, création d'un nouveau lead externe
-            new_lead_id = f"ext_{int(time.time())}"
+            # Insertion dans la base de données avec RETURNING pour récupérer l'ID auto-généré
+            insert_query = """
+                INSERT INTO leads (email, source, status, created_at, notes)
+                VALUES (:email, :source, :status, :created_at, :notes)
+                RETURNING id
+            """
             
-            # Création du record lead
-            lead_record = {
-                "id": new_lead_id,
-                "email": email,
-                "source": "email_entrant",
-                "status": "nouveau",
-                "created_at": datetime.datetime.now().isoformat(),
-                "type": "lead_externe",
-                "first_message": message_content[:500] if message_content else ""  # Limiter la taille
-            }
+            # Utiliser une connexion directe avec commit pour assurer la persistance
+            import sqlalchemy as sa
+            from core.db import engine
             
-            # Insertion dans la base de données
-            self.db.insert("leads", lead_record)
+            with engine.connect() as connection:
+                sql = sa.text(insert_query)
+                result = connection.execute(sql, {
+                    "email": email,
+                    "source": "email_entrant",
+                    "status": "nouveau", 
+                    "created_at": datetime.datetime.now().isoformat(),
+                    "notes": f"Lead externe créé depuis email. Premier message: {message_content[:200] if message_content else 'N/A'}"
+                })
+                connection.commit()
+                result_row = result.fetchone()
+            
+            new_lead_id = result_row[0] if result_row else None
             
             print(f"Nouveau lead externe créé: {new_lead_id} pour l'email {email}")
             return new_lead_id, True
             
         except Exception as e:
-            # En cas d'erreur, création d'un ID temporaire
+            # En cas d'erreur, retourner None avec indication d'erreur
             print(f"Erreur lors de la recherche/création du lead email: {str(e)}")
-            temp_id = f"ext_{int(time.time())}"
-            return temp_id, True
+            return None, True

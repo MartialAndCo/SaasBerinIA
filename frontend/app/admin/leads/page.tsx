@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Download, Filter, MoreHorizontal, Search, Send, Eye, Star, MapPin, Building } from "lucide-react"
+import { Download, Filter, MoreHorizontal, Search, Send, Eye, Star, MapPin, Building, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -82,16 +82,83 @@ export default function LeadsPage() {
   const [selectAll, setSelectAll] = useState(false)
   const [filters, setFilters] = useState<LeadFilters>({})
   const [activeTab, setActiveTab] = useState("all")
+  
+  // États pour la pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [totalLeads, setTotalLeads] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [sortBy, setSortBy] = useState("newest")
+  
+  // États pour les statistiques globales (indépendantes de la pagination)
+  const [globalStats, setGlobalStats] = useState({
+    total: 0,
+    by_status: {
+      new: 0,
+      qualified: 0,
+      contacted: 0,
+      converted: 0,
+    },
+    visual_analyzed: 0,
+    avg_visual_score: 0
+  })
 
-  // Récupérer les leads depuis l'API
+  // Récupérer les statistiques globales (indépendantes de la pagination)
+  const fetchGlobalStats = async () => {
+    try {
+      const statsResponse = await apiRequest('/api/leads/stats')
+      
+      setGlobalStats({
+        total: statsResponse.total_count || 0,
+        by_status: {
+          new: statsResponse.new_count || 0,
+          qualified: statsResponse.qualified_count || 0,
+          contacted: statsResponse.responded_count || 0,
+          converted: statsResponse.interested_count || 0, // Utiliser interested_count comme proxy pour converted
+        },
+        visual_analyzed: statsResponse.visual_analyzed_count || 0,
+        avg_visual_score: statsResponse.avg_visual_score || 0
+      })
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques globales:', error)
+    }
+  }
+
+  // Récupérer les leads depuis l'API avec pagination
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         setLoading(true)
-        const response = await apiRequest('/api/leads/')
-        console.log('Leads reçus depuis l\'API:', response) // Debug pour voir la vraie structure
-        setLeads(response)
-        setFilteredLeads(response)
+        
+        // Construire les paramètres de l'API avec pagination
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: pageSize.toString(),
+          sort_by: sortBy
+        })
+        
+        // Ajouter les filtres de recherche si nécessaire
+        if (searchQuery.trim()) {
+          params.append('search', searchQuery.trim())
+        }
+        
+        const response = await apiRequest(`/api/leads/?${params.toString()}`)
+        console.log('Réponse paginée depuis l\'API:', response) // Debug pour voir la vraie structure
+        
+        // Le backend renvoie maintenant {leads, total, page, limit, total_pages}
+        if (response.leads) {
+          setLeads(response.leads)
+          setFilteredLeads(response.leads)
+          setTotalLeads(response.total)
+          setTotalPages(response.total_pages)
+        } else {
+          // Fallback si l'API renvoie encore l'ancien format
+          setLeads(response)
+          setFilteredLeads(response)
+          setTotalLeads(response.length)
+          setTotalPages(1)
+        }
+        
         setError(null)
       } catch (err) {
         console.error("Error fetching leads:", err)
@@ -102,7 +169,12 @@ export default function LeadsPage() {
     }
 
     fetchLeads()
-  }, [])
+  }, [currentPage, pageSize, sortBy, searchQuery])
+
+  // Charger les statistiques globales au démarrage et lors des changements importants
+  useEffect(() => {
+    fetchGlobalStats()
+  }, []) // Charger une seule fois au démarrage
 
   // Filtrer les leads en fonction de la recherche et des filtres
   useEffect(() => {
@@ -181,10 +253,39 @@ export default function LeadsPage() {
   const refreshLeads = async () => {
     try {
       setLoading(true)
-      const response = await apiRequest('/api/leads/')
-      setLeads(response)
-      setFilteredLeads(response)
+      
+      // Construire les paramètres de l'API avec pagination
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+        sort_by: sortBy
+      })
+      
+      // Ajouter les filtres de recherche si nécessaire
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim())
+      }
+      
+      const response = await apiRequest(`/api/leads/?${params.toString()}`)
+      
+      // Le backend renvoie maintenant {leads, total, page, limit, total_pages}
+      if (response.leads) {
+        setLeads(response.leads)
+        setFilteredLeads(response.leads)
+        setTotalLeads(response.total)
+        setTotalPages(response.total_pages)
+      } else {
+        // Fallback si l'API renvoie encore l'ancien format
+        setLeads(response)
+        setFilteredLeads(response)
+        setTotalLeads(response.length)
+        setTotalPages(1)
+      }
+      
       setError(null)
+      
+      // Recharger aussi les statistiques globales
+      await fetchGlobalStats()
       
       toast({
         title: "Leads actualisés",
@@ -358,14 +459,8 @@ export default function LeadsPage() {
   if (loading) return <div className="p-4">Chargement des leads...</div>
   if (error) return <div className="p-4 text-red-500">Erreur: {error}</div>
 
-  // Statistiques des leads
-  const newLeads = leads.filter(l => l.status === "new")
-  const qualifiedLeads = leads.filter(l => l.status === "qualified")
-  const convertedLeads = leads.filter(l => l.status === "converted")
-  const leadsWithVisualAnalysis = leads.filter(l => l.visual_score !== undefined && l.visual_score !== null)
-  const avgVisualScore = leadsWithVisualAnalysis.length > 0 
-    ? (leadsWithVisualAnalysis.reduce((sum, lead) => sum + (lead.visual_score || 0), 0) / leadsWithVisualAnalysis.length).toFixed(1)
-    : 0
+  // Utiliser les statistiques globales au lieu des leads de la page courante
+  // (Les vraies statistiques de toute la base de données)
 
   return (
     <div className="flex flex-col gap-5 w-full">
@@ -413,7 +508,7 @@ export default function LeadsPage() {
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{leads.length}</div>
+            <div className="text-2xl font-bold">{globalStats.total}</div>
             <p className="text-xs text-muted-foreground">Leads collectés</p>
           </CardContent>
         </Card>
@@ -423,7 +518,7 @@ export default function LeadsPage() {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{newLeads.length}</div>
+            <div className="text-2xl font-bold">{globalStats.by_status.new}</div>
             <p className="text-xs text-muted-foreground">À traiter</p>
           </CardContent>
         </Card>
@@ -433,7 +528,7 @@ export default function LeadsPage() {
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{qualifiedLeads.length}</div>
+            <div className="text-2xl font-bold">{globalStats.by_status.qualified}</div>
             <p className="text-xs text-muted-foreground">Prêts pour prospection</p>
           </CardContent>
         </Card>
@@ -443,7 +538,7 @@ export default function LeadsPage() {
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{convertedLeads.length}</div>
+            <div className="text-2xl font-bold">{globalStats.by_status.converted}</div>
             <p className="text-xs text-muted-foreground">Clients potentiels</p>
           </CardContent>
         </Card>
@@ -453,8 +548,8 @@ export default function LeadsPage() {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{avgVisualScore}/10</div>
-            <p className="text-xs text-muted-foreground">{leadsWithVisualAnalysis.length} analysés</p>
+            <div className="text-2xl font-bold">{globalStats.avg_visual_score}/10</div>
+            <p className="text-xs text-muted-foreground">{globalStats.visual_analyzed} analysés</p>
           </CardContent>
         </Card>
       </div>
@@ -599,6 +694,64 @@ export default function LeadsPage() {
                 </TableBody>
               </Table>
             </CardContent>
+            <CardFooter className="flex items-center justify-between py-4">
+              <div className="text-sm text-muted-foreground">
+                Affichage {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalLeads)} sur {totalLeads} leads
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Leads par page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1); // Retour à la première page
+                    }}
+                    className="h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Précédent
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm">Page</span>
+                    <select
+                      value={currentPage}
+                      onChange={(e) => setCurrentPage(Number(e.target.value))}
+                      className="h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                    >
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <option key={page} value={page}>
+                          {page}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-sm">sur {totalPages}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Suivant
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardFooter>
           </Card>
         </TabsContent>
 

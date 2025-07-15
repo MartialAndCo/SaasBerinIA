@@ -55,8 +55,8 @@ from utils.logging_config import get_logger, setup_logging
 logger = setup_logging("webhook")
 
 # Import des gestionnaires de webhook spécifiques
-from webhook.whatsapp_webhook import handle_whatsapp_webhook
-from webhook.instantly_webhook import handle_instantly_webhook
+# Note: WhatsApp webhook disabled (module removed)
+# from webhook.instantly_webhook import handle_instantly_webhook  # SUPPRIMÉ - Migration vers SMTP
 from twilio.request_validator import RequestValidator
 
 # Création de l'application FastAPI
@@ -126,26 +126,10 @@ async def health_check():
 @app.post("/webhook/whatsapp")
 async def whatsapp_webhook(request: Request):
     """
-    Endpoint pour le webhook WhatsApp
+    Endpoint pour le webhook WhatsApp (DÉSACTIVÉ)
     """
-    try:
-        data = await request.json()
-        logger.info("Requête webhook WhatsApp reçue")
-        
-        # Log des données reçues pour debugging
-        logger.debug(f"Données reçues: {json.dumps(data)}")
-        
-        # Traitement par le gestionnaire WhatsApp
-        response = await handle_whatsapp_webhook(data)
-        
-        logger.info("Réponse au webhook WhatsApp envoyée")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Erreur lors du traitement du webhook WhatsApp: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+    logger.warning("Webhook WhatsApp reçu mais le service est désactivé")
+    return {"status": "disabled", "message": "WhatsApp webhook service has been disabled"}
 
 @app.post("/webhook/sms-response")
 async def receive_sms_response(
@@ -224,31 +208,10 @@ async def receive_sms_response(
 @app.post("/webhook/instantly")
 async def instantly_webhook(request: Request):
     """
-    Endpoint pour le webhook Instantly.ai
+    Endpoint pour le webhook Instantly.ai (DÉSACTIVÉ)
     """
-    try:
-        data = await request.json()
-        logger.info("Requête webhook Instantly.ai reçue")
-        
-        # Log des données reçues pour debugging
-        logger.debug(f"Données reçues: {json.dumps(data)}")
-        
-        # Vérifier si c'est un événement Instantly.ai valide
-        if "event_type" not in data:
-            logger.warning("Webhook Instantly.ai invalide: event_type manquant")
-            raise HTTPException(status_code=400, detail="Événement Instantly.ai invalide")
-        
-        # Traitement par le gestionnaire Instantly
-        response = await handle_instantly_webhook(data)
-        
-        logger.info(f"Réponse au webhook Instantly.ai envoyée: {response['status']}")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Erreur lors du traitement du webhook Instantly.ai: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+    logger.warning("Webhook Instantly.ai reçu mais le service a été désactivé (migration vers SMTP)")
+    return {"status": "disabled", "message": "Instantly.ai webhook service has been disabled - migrated to SMTP"}
 
 @app.get("/webhook/logs")
 async def get_logs(lines: int = 50):

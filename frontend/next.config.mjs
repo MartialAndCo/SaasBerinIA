@@ -24,10 +24,7 @@ const nextConfig = {
   },
   async rewrites() {
     return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
-      },
+      // Pas besoin de rewrite car nginx gère déjà le proxy
     ];
   },
 }

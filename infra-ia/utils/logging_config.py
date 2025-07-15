@@ -89,7 +89,6 @@ SYSTEM_LOG = os.path.join(LOGS_DIR, "system.log")
 AGENTS_LOG = os.path.join(LOGS_DIR, "agents.log")
 ERROR_LOG = os.path.join(LOGS_DIR, "error.log")
 WEBHOOK_LOG = os.path.join(LOGS_DIR, "webhook.log") 
-WHATSAPP_LOG = os.path.join(LOGS_DIR, "whatsapp.log")
 AGENT_INTERACTIONS_LOG = os.path.join(LOGS_DIR, "agent_interactions.jsonl")
 
 # Format des logs
@@ -144,8 +143,6 @@ def setup_logging(service_name, log_level=logging.INFO):
     # Fichier de log spécifique au service
     if service_name == 'webhook':
         service_log = WEBHOOK_LOG
-    elif service_name == 'whatsapp':
-        service_log = WHATSAPP_LOG
     elif service_name in ['agent', 'agents']:
         service_log = AGENTS_LOG
     else:

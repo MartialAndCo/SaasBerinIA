@@ -1,103 +1,211 @@
 {
-    "system": {
-        "name": "BerinIA",
-        "version": "1.0.0",
-        "language": "fr",
-        "environment": "development",
-        "log_level": "INFO",
-        "debug": true
-    },
-    "db": {
-        "host": "localhost",
-        "port": 5432,
-        "database": "berinia",
-        "user": "berinia_user",
-        "password": "berinia_pass"
-    },
-    "qdrant": {
-        "host": "localhost",
-        "port": 6333,
-        "collections": {
-            "knowledge": {
-                "vector_size": 1536,
-                "distance": "Cosine"
-            },
-            "documents": {
-                "vector_size": 1536,
-                "distance": "Cosine"
-            },
-            "leads": {
-                "vector_size": 1536,
-                "distance": "Cosine"
-            },
-            "templates": {
-                "vector_size": 1536,
-                "distance": "Cosine"
-            }
-        }
-    },
-    "openai": {
-        "api_key": "",
-        "model": "gpt-4.1",
-        "max_tokens": 2000,
-        "temperature": 0.7
-    },
-    "agents": {
-        "overseer": {
-            "active": true,
-            "check_interval_seconds": 5
-        },
-        "scheduler": {
-            "active": true,
-            "check_interval_seconds": 60,
-            "tasks_file": "data/tasks.json"
-        },
-        "response_listener": {
-            "active": true,
-            "check_interval_seconds": 300
-        },
-        "logger": {
-            "active": true,
-            "log_retention_days": 30
-        },
-        "admin_interpreter": {
-            "active": true
-        },
-        "scraping_supervisor": {
-            "active": true,
-            "rate_limit": 10
-        },
-        "qualification_supervisor": {
-            "active": true
-        },
-        "prospection_supervisor": {
-            "active": true
-        },
-        "pivot_strategy": {
-            "active": true
-        },
-        "visual_analyzer": {
-            "active": true,
-            "description": "Agent d'analyse visuelle des sites web",
-            "screenshots_dir": "vision_screenshots",
-            "model": "gpt-4.1",
-            "check_interval_seconds": 300
-        }
-    },
-    "webhook": {
-        "host": "127.0.0.1",
-        "port": 8001,
-        "secret": "",
-        "endpoints": {
-            "email_reply": "/webhook/email-reply",
-            "system_status": "/webhook/system-status"
-        }
+  "system": {
+    "name": "BerinIA",
+    "version": "1.0.0",
+    "language": "fr",
+    "environment": "development",
+    "log_level": "INFO",
+    "debug": true
+  },
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "berinia",
+    "user": "berinia_user",
+    "password": "berinia_pass"
+  },
+  "qdrant": {
+    "host": "localhost",
+    "port": 6333,
+    "collections": {
+      "knowledge": {
+        "vector_size": 1536,
+        "distance": "Cosine"
+      },
+      "documents": {
+        "vector_size": 1536,
+        "distance": "Cosine"
+      },
+      "leads": {
+        "vector_size": 1536,
+        "distance": "Cosine"
+      },
+      "templates": {
+        "vector_size": 1536,
+        "distance": "Cosine"
+      }
     }
-    ,
-    "monitoring": {
-        "enabled": true,
-        "check_interval_seconds": 30,
-        "health_check_interval_minutes": 5,
-        "log_errors": true
+  },
+  "openai": {
+    "api_key": "",
+    "model": "gpt-4.1",
+    "max_tokens": 2000,
+    "temperature": 0.7
+  },
+  "agents": {
+    "overseer": {
+      "active": true,
+      "check_interval_seconds": 5
+    },
+    "scheduler": {
+      "active": true,
+      "check_interval_seconds": 60,
+      "tasks_file": "data/tasks.json"
+    },
+    "response_listener": {
+      "active": true,
+      "check_interval_seconds": 300
+    },
+    "logger": {
+      "active": true,
+      "log_retention_days": 30
+    },
+    "admin_interpreter": {
+      "active": true
+    },
+    "scraping_supervisor": {
+      "active": true,
+      "rate_limit": 10
+    },
+    "qualification_supervisor": {
+      "active": true
+    },
+    "prospection_supervisor": {
+      "active": true
+    },
+    "pivot_strategy": {
+      "active": true
+    },
+    "visual_analyzer": {
+      "active": true,
+      "description": "Agent d'analyse visuelle des sites web",
+      "screenshots_dir": "vision_screenshots",
+      "model": "gpt-4.1",
+      "check_interval_seconds": 300
+    },
+    "task_watchdog": {
+      "active": true,
+      "description": "Agent de s\u00e9curit\u00e9 des t\u00e2ches - Mode production \u00e9quilibr\u00e9",
+      "auto_delete_on_critical": false,
+      "auto_quarantine_on_suspect": false,
+      "alert_admin_on_critical": true,
+      "enable_learning": true,
+      "permissive_mode": true,
+      "log_only_suspects_and_critical": true,
+      "log_all_analyses": false,
+      "qdrant_collection": "task_security_patterns",
+      "analysis_window_hours": 24,
+      "analysis_model": "gpt-4.1-mini",
+      "critical_keywords": [
+        "delete_all",
+        "rm_rf",
+        "drop_table",
+        "shutdown",
+        "kill_system"
+      ],
+      "suspicious_keywords": [
+        "spam",
+        "flood",
+        "ddos",
+        "attack"
+      ],
+      "behavioral_thresholds": {
+        "minimum_task_interval_seconds": 1,
+        "max_tasks_per_agent_per_hour": 100,
+        "max_tasks_per_agent_per_day": 1000,
+        "duplicate_detection_threshold": 20
+      },
+      "performance_thresholds": {
+        "max_similar_tasks_24h": 50,
+        "critical_frequency_threshold": 10,
+        "suspect_frequency_threshold": 20
+      }
+    },
+    "MessagingAgent": {
+      "active": true,
+      "description": "Agent de messagerie - Mode production R\u00c9EL",
+      "test_mode": false,
+      "email_service": "smtp",
+      "sms_service": "twilio",
+      "auto_response_enabled": true,
+      "daily_limits": {
+        "max_emails_per_day": 1000,
+        "max_sms_per_day": 100
+      },
+      "security": {
+        "require_confirmation_for_mass_send": true,
+        "max_recipients_per_batch": 50
+      },
+      "auto_contact_enabled": true
     }
+  },
+  "webhook": {
+    "host": "127.0.0.1",
+    "port": 8001,
+    "secret": "",
+    "endpoints": {
+      "email_reply": "/webhook/email-reply",
+      "system_status": "/webhook/system-status"
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "check_interval_seconds": 30,
+    "health_check_interval_minutes": 5,
+    "log_errors": true,
+    "performance_tracking": {
+      "response_times": false,
+      "memory_usage": false,
+      "cpu_usage": false
+    }
+  },
+  "meeting_settings": {
+    "timezone": "Europe/Paris",
+    "business_hours": {
+      "start": "09:00",
+      "end": "18:00"
+    },
+    "working_days": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "default_duration_minutes": 30,
+    "buffer_minutes": 15,
+    "max_slots_returned": 3
+  },
+  "jitsi_settings": {
+    "base_url": "https://meet.jit.si",
+    "room_prefix": "berinia"
+  },
+  "google_calendar": {
+    "client_id": "",
+    "project_id": "",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret": "",
+    "redirect_uris": [
+      "http://localhost"
+    ]
+  },
+  "reminders": {
+    "email": {
+      "enabled": true,
+      "times": [
+        1440,
+        60,
+        10
+      ]
+    },
+    "sms": {
+      "times": [
+        1440,
+        60,
+        10
+      ]
+    }
+  }
 }

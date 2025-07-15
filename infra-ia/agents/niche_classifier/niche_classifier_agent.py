@@ -265,13 +265,19 @@ class NicheClassifierAgent(Agent):
         action = input_data.get("action", "classify")
         niche = input_data.get("niche")
         
-        if not niche:
-            return {"error": "Le nom de la niche doit être spécifié"}
-            
         if action == "classify":
-            return self.classify_niche(niche)
+            if not niche:
+                return {"status": "error", "error": "Le nom de la niche doit être spécifié"}
+            result = self.classify_niche(niche)
+            result["status"] = "success"
+            return result
         elif action == "generate_approach":
+            # Pour generate_approach, utiliser une niche par défaut si non spécifiée
+            if not niche:
+                niche = "b2b_services"  # Niche par défaut
             visual_analysis = input_data.get("visual_analysis")
-            return self.generate_personalized_approach(niche, visual_analysis)
+            result = self.generate_personalized_approach(niche, visual_analysis)
+            result["status"] = "success"
+            return result
         else:
-            return {"error": f"Action inconnue: {action}"}
+            return {"status": "error", "error": f"Action inconnue: {action}"}

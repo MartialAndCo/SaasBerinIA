@@ -57,6 +57,16 @@ class ConversationAgent(Agent):
             "errors": 0
         }
         
+        # NOUVELLES FONCTIONNALITÉS PROACTIVES TPE/PME
+        self.proactive_enabled = self.config.get("proactive_enabled", True)
+        self.last_proactive_check = datetime.now()
+        self.proactive_interval = self.config.get("proactive_interval_minutes", 30)  # 30 minutes
+        
+        if self.proactive_enabled:
+            self.logger.info("🚀 ConversationAgent configuré en mode PROACTIF TPE/PME")
+        else:
+            self.logger.info("⚠️ ConversationAgent en mode passif")
+        
     def refresh_agent_registry(self):
         """Met à jour le cache des agents disponibles via OverseerAgent"""
         try:
@@ -596,38 +606,47 @@ Garde ta réponse courte et propose de l'aide concrète.
             return "Je suis BerinIA, votre assistant de prospection. Comment puis-je vous aider avec vos leads et campagnes ?"
     
     def get_capabilities_response(self) -> str:
-        """Génère une réponse d'aide personnalisée"""
+        """Génère une réponse d'aide personnalisée ADAPTÉE TPE/PME"""
         
-        capabilities = f"""🚀 **BerinIA - Assistant IA Révolutionnaire**
+        capabilities = f"""🚀 **BerinIA - Assistant IA spécialiste TPE/PME**
 
-Je comprends le langage naturel et peux vous aider avec :
+Je vous aide à automatiser votre prospection pour les **petites entreprises françaises** :
 
-🔍 **Scraping Intelligent**
-• "scrappe 5 restaurants à toulouse"
-• "trouve des dentistes sur paris"  
-• "récupère 20 leads dans l'immobilier"
+🎯 **SECTEURS SPÉCIALISÉS TPE/PME**
+• Salons de coiffure, instituts de beauté
+• Garages automobiles, centres auto
+• Restaurants, cafés, boulangeries
+• Cabinets médicaux, dentaires, vétérinaires
+• Plombiers, électriciens, artisans
+• Commerces de proximité
 
-📊 **Analyses de Données**
-• "combien de leads avons-nous ?"
-• "statistiques de la dernière campagne"
-• "performance par niche"
+🔍 **Scraping Ciblé TPE/PME**
+• "trouve 10 coiffeurs à Lyon"
+• "scrappe des garages en Rhône-Alpes"  
+• "récupère des dentistes à Marseille"
 
-📧 **Communication**
-• "envoie un email aux nouveaux leads"
-• "prépare une campagne SMS"
-• "relance les prospects"
+📊 **Analyses Business TPE/PME**
+• "combien de salons de coiffure dans ma BDD ?"
+• "performance des campagnes garages"
+• "taux de réponse par secteur TPE"
 
-⚙️ **Configuration**
-• "modifie la limite de scraping"
-• "état du système"
-• "agents disponibles"
+📧 **Communication Adaptée Petites Entreprises**
+• "envoie des emails aux nouveaux coiffeurs"
+• "campagne SMS pour les restaurants"
+• "relance les garages qui n'ont pas répondu"
 
-💬 **Intelligence Naturelle**
-Je comprends toutes les variantes de langage naturel - parlez-moi normalement !
+🎯 **Intelligence Business TPE/PME**
+• Je comprends les enjeux des petites entreprises
+• Messages adaptés aux patrons/gérants (pas corporate)
+• ROI rapide, simplicité, gain de temps
+• Email Gmail d'un artisan = NORMAL (pas pénalisant)
 
-Agents disponibles : {', '.join(list(self.available_agents.keys())[:5])}{'...' if len(self.available_agents) > 5 else ''}
+💡 **Suggestions Proactives**
+Je propose automatiquement des actions selon vos données et patterns !
 
-**VERSION FIXÉE :** Retourne les VRAIES données, sauvegarde automatique en BDD, création auto de niches/campagnes !
+Agents spécialisés : {', '.join(list(self.available_agents.keys())[:5])}{'...' if len(self.available_agents) > 5 else ''}
+
+**BUSINESS MODEL :** Solutions IA (chatbots, téléphones IA, répondeurs) pour TPE/PME françaises
 """
         return capabilities
     
@@ -645,6 +664,212 @@ Agents disponibles : {', '.join(list(self.available_agents.keys())[:5])}{'...' i
             return self.delegate_via_overseer("DatabaseQueryAgent", message)
         else:
             return self.success_response("Je suis désolé, j'ai eu un problème pour analyser votre demande. Pouvez-vous la reformuler ?")
+    
+    def check_proactive_opportunities(self) -> Optional[Dict[str, Any]]:
+        """NOUVELLE MÉTHODE PROACTIVE : Analyse les données et propose des actions intelligentes TPE/PME"""
+        
+        if not self.proactive_enabled:
+            return None
+            
+        now = datetime.now()
+        time_since_last_check = (now - self.last_proactive_check).total_seconds() / 60  # en minutes
+        
+        if time_since_last_check < self.proactive_interval:
+            return None  # Pas encore temps de vérifier
+            
+        self.last_proactive_check = now
+        
+        try:
+            self.logger.info("🤖 Analyse proactive des opportunités TPE/PME...")
+            
+            # Analyse de la base de données pour détecter des opportunités
+            opportunities = self._analyze_business_opportunities()
+            
+            if opportunities:
+                suggestion = self._generate_proactive_suggestion(opportunities)
+                return {
+                    "type": "proactive_suggestion",
+                    "opportunities": opportunities,
+                    "suggestion": suggestion,
+                    "timestamp": now.isoformat()
+                }
+            
+        except Exception as e:
+            self.logger.error(f"Erreur analyse proactive: {e}")
+            
+        return None
+    
+    def _analyze_business_opportunities(self) -> List[Dict[str, Any]]:
+        """Analyse les données business pour détecter des opportunités TPE/PME"""
+        
+        opportunities = []
+        
+        if not DATABASE_AVAILABLE:
+            return opportunities
+            
+        try:
+            with db_session() as session:
+                # 1. Leads jamais contactés avec score élevé
+                uncontacted_query = """
+                    SELECT COUNT(*), AVG(score) 
+                    FROM leads 
+                    WHERE contact_status = 'never_contacted' 
+                    AND score >= 7
+                """
+                result = session.execute(text(uncontacted_query)).fetchone()
+                if result and result[0] > 0:
+                    opportunities.append({
+                        "type": "high_score_uncontacted_leads",
+                        "count": result[0],
+                        "avg_score": round(result[1], 1),
+                        "priority": "high",
+                        "sector": "tpe_pme_mixed"
+                    })
+                
+                # 2. Secteurs TPE/PME avec beaucoup de leads non contactés
+                tpe_sectors_query = """
+                    SELECT industry, COUNT(*) as count 
+                    FROM leads 
+                    WHERE contact_status = 'never_contacted' 
+                    AND industry ILIKE ANY (ARRAY['%coiffure%', '%garage%', '%restaurant%', '%dentaire%', '%médical%', '%plombier%', '%électricien%'])
+                    GROUP BY industry 
+                    HAVING COUNT(*) >= 5
+                    ORDER BY count DESC
+                """
+                results = session.execute(text(tpe_sectors_query)).fetchall()
+                for row in results:
+                    opportunities.append({
+                        "type": "tpe_sector_opportunity",
+                        "sector": row[0],
+                        "count": row[1],
+                        "priority": "medium",
+                        "business_type": "tpe_focused"
+                    })
+                
+                # 3. Campagnes avec faible taux de réponse à relancer
+                low_response_query = """
+                    SELECT c.name, COUNT(m.id) as messages_sent,
+                           COUNT(CASE WHEN m.type = 'reply' THEN 1 END) as responses
+                    FROM campaigns c
+                    LEFT JOIN messages m ON c.id = m.campaign_id
+                    WHERE c.created_at >= NOW() - INTERVAL '30 days'
+                    GROUP BY c.id, c.name
+                    HAVING COUNT(m.id) >= 10 
+                    AND (COUNT(CASE WHEN m.type = 'reply' THEN 1 END)::float / COUNT(m.id)) < 0.05
+                """
+                results = session.execute(text(low_response_query)).fetchall()
+                for row in results:
+                    response_rate = (row[2] / row[1] * 100) if row[1] > 0 else 0
+                    opportunities.append({
+                        "type": "low_response_campaign",
+                        "campaign": row[0],
+                        "messages_sent": row[1],
+                        "response_rate": round(response_rate, 1),
+                        "priority": "medium",
+                        "action_needed": "follow_up_optimization"
+                    })
+                
+                # 4. Détection de nouveaux secteurs TPE prometteurs
+                promising_sectors_query = """
+                    SELECT industry, COUNT(*) as total_leads, AVG(score) as avg_score
+                    FROM leads 
+                    WHERE created_at >= NOW() - INTERVAL '7 days'
+                    AND industry IS NOT NULL
+                    GROUP BY industry
+                    HAVING COUNT(*) >= 3 AND AVG(score) >= 6
+                    ORDER BY avg_score DESC, total_leads DESC
+                """
+                results = session.execute(text(promising_sectors_query)).fetchall()
+                for row in results:
+                    opportunities.append({
+                        "type": "promising_new_sector",
+                        "sector": row[0],
+                        "recent_leads": row[1],
+                        "avg_score": round(row[2], 1),
+                        "priority": "high",
+                        "potential": "high_conversion"
+                    })
+                
+        except Exception as e:
+            self.logger.error(f"Erreur analyse opportunités BDD: {e}")
+            
+        return opportunities
+    
+    def _generate_proactive_suggestion(self, opportunities: List[Dict[str, Any]]) -> str:
+        """Génère une suggestion proactive intelligente basée sur les opportunités TPE/PME"""
+        
+        if not opportunities:
+            return "Système en cours d'analyse, aucune action immédiate recommandée."
+            
+        # Priorisation des opportunités
+        high_priority = [opp for opp in opportunities if opp.get("priority") == "high"]
+        medium_priority = [opp for opp in opportunities if opp.get("priority") == "medium"]
+        
+        suggestions = []
+        
+        # Suggestions pour leads non contactés avec score élevé
+        for opp in high_priority:
+            if opp["type"] == "high_score_uncontacted_leads":
+                suggestions.append(f"🎯 **OPPORTUNITÉ IMMÉDIATE** : {opp['count']} leads TPE/PME avec score élevé ({opp['avg_score']}/10) jamais contactés ! Lancement d'une campagne recommandé.")
+            
+            elif opp["type"] == "promising_new_sector":
+                suggestions.append(f"🚀 **NOUVEAU SECTEUR PROMETTEUR** : {opp['recent_leads']} nouveaux leads '{opp['sector']}' avec score moyen {opp['avg_score']}/10. Potentiel de conversion élevé !")
+        
+        # Suggestions pour secteurs TPE spécifiques
+        for opp in medium_priority:
+            if opp["type"] == "tpe_sector_opportunity":
+                suggestions.append(f"💼 **SECTEUR TPE ACTIF** : {opp['count']} leads '{opp['sector']}' non contactés. Campagne ciblée recommandée.")
+                
+            elif opp["type"] == "low_response_campaign":
+                suggestions.append(f"📈 **OPTIMISATION CAMPAGNE** : Campagne '{opp['campaign']}' avec {opp['response_rate']}% de réponses. Relance ou pivot stratégique conseillé.")
+        
+        if not suggestions:
+            return "✅ Toutes les opportunités TPE/PME sont en cours de traitement. Système optimisé."
+            
+        # Construction du message final avec actions concrètes
+        suggestion_text = "\n".join(suggestions[:3])  # Max 3 suggestions
+        
+        action_suggestions = []
+        if any("OPPORTUNITÉ IMMÉDIATE" in s for s in suggestions):
+            action_suggestions.append("💡 **Action suggérée** : 'envoie des emails aux leads score élevé'")
+        if any("SECTEUR TPE" in s for s in suggestions):
+            action_suggestions.append("💡 **Action suggérée** : 'scrappe plus de [secteur] à [ville]'")
+        if any("OPTIMISATION" in s for s in suggestions):
+            action_suggestions.append("💡 **Action suggérée** : 'analyse performance campagne [nom]'")
+            
+        if action_suggestions:
+            suggestion_text += "\n\n" + "\n".join(action_suggestions[:2])
+            
+        return suggestion_text
+    
+    def get_proactive_insights(self) -> Dict[str, Any]:
+        """Génère des insights proactifs pour l'utilisateur"""
+        
+        insights = {
+            "timestamp": datetime.now().isoformat(),
+            "proactive_enabled": self.proactive_enabled,
+            "business_focus": "TPE/PME françaises",
+            "recommendations": []
+        }
+        
+        # Vérification des opportunités actuelles
+        opportunities = self.check_proactive_opportunities()
+        
+        if opportunities:
+            insights["current_opportunities"] = opportunities
+            insights["recommendations"].append("Nouvelles opportunités détectées - action recommandée")
+        else:
+            insights["recommendations"].append("Système optimisé - surveillance continue active")
+            
+        # Ajout de recommandations générales TPE/PME
+        insights["tpe_pme_tips"] = [
+            "Privilégier les contacts directs (patrons/gérants) vs assistants",
+            "Email Gmail d'un artisan = contact normal TPE, pas pénalisant",
+            "Secteurs à fort potentiel : coiffure, garage, médical, artisans",
+            "Messages courts et pragmatiques, ROI immédiat"
+        ]
+        
+        return insights
     
     def add_to_history(self, content: str, role: str, author: str):
         """Ajoute une entrée à l'historique conversationnel"""

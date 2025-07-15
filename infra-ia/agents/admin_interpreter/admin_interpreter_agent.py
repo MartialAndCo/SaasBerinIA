@@ -707,7 +707,7 @@ class AdminInterpreterAgent(Agent):
     
     def _handle_schedule_task(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Traite une demande de planification de tâche
+        Traite une demande de planification de tâche avec système avancé Phase 2
         
         Args:
             analysis: Résultat de l'analyse
@@ -724,6 +724,9 @@ class AdminInterpreterAgent(Agent):
             recurrence_interval = action.get("recurrence_interval")
             priority = action.get("priority", 1)
             
+            # NOUVEAU : Détermination intelligente du type de tâche
+            task_type = self._determine_task_type(task_data, recurring, recurrence_interval)
+            
             # Vérification des champs obligatoires
             if not task_data or not execution_time:
                 return {
@@ -731,17 +734,19 @@ class AdminInterpreterAgent(Agent):
                     "message": "Informations de tâche incomplètes"
                 }
             
-            # Transmission à l'AgentSchedulerAgent
+            # Transmission à l'AgentSchedulerAgent avec API AVANCÉE
             from agents.scheduler.agent_scheduler_agent import AgentSchedulerAgent
             scheduler = AgentSchedulerAgent()
             
             result = scheduler.run({
-                "action": "schedule_task",
+                "action": "schedule_advanced_task",  # NOUVELLE API !
+                "task_type": task_type,
                 "task_data": task_data,
                 "execution_time": execution_time,
-                "recurring": recurring,
+                "priority": priority,
                 "recurrence_interval": recurrence_interval,
-                "priority": priority
+                "cleanup_after_days": self._get_cleanup_days(task_type),
+                "priority_decay": task_type == "business_recurring"
             })
             
             # Construction de la réponse
@@ -916,6 +921,59 @@ class AdminInterpreterAgent(Agent):
         except Exception as e:
             self.logger.error(f"Erreur lors de la construction du prompt: {str(e)}")
             return f"Tu es un agent nommé {self.name}. Réponds en JSON. Voici le message de l'admin: {context.get('message', '')}"
+    
+    def _determine_task_type(self, task_data: Dict[str, Any], recurring: bool, recurrence_interval: Optional[int]) -> str:
+        """
+        Détermine intelligemment le type de tâche selon le contexte
+        
+        Args:
+            task_data: Données de la tâche
+            recurring: Si la tâche est récurrente
+            recurrence_interval: Intervalle de récurrence
+            
+        Returns:
+            Type de tâche approprié
+        """
+        agent = task_data.get("agent", "")
+        action = task_data.get("action", "")
+        
+        # Tâches système permanentes
+        system_agents = ["ProspectionSupervisor", "ScrapingSupervisor", "QualificationSupervisor", "OverseerAgent"]
+        system_actions = ["daily_monitoring", "health_check", "system_backup", "maintenance"]
+        
+        if agent in system_agents or any(sys_action in action.lower() for sys_action in system_actions):
+            return "system_recurring"
+        
+        # Tâches business avec fin possible
+        if recurring and recurrence_interval and recurrence_interval >= 3600:  # Au moins 1h
+            return "business_recurring"
+        
+        # Tâches conditionnelles (relances, follow-up)
+        conditional_actions = ["follow_up", "reminder", "relance", "check_response"]
+        if any(cond_action in action.lower() for cond_action in conditional_actions):
+            return "conditional"
+        
+        # Par défaut : one_time
+        return "one_time"
+    
+    def _get_cleanup_days(self, task_type: str) -> int:
+        """
+        Détermine le nombre de jours avant nettoyage selon le type
+        
+        Args:
+            task_type: Type de tâche
+            
+        Returns:
+            Nombre de jours
+        """
+        cleanup_mapping = {
+            "system_recurring": None,  # Jamais nettoyé
+            "business_recurring": 30,  # 30 jours
+            "one_time": 1,            # 1 jour après exécution
+            "conditional": 7           # 7 jours
+        }
+        
+        return cleanup_mapping.get(task_type, 7)
     
     def _format_time_interval(self, seconds: int) -> str:
         """

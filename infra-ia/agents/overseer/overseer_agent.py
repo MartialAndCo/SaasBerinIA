@@ -51,63 +51,35 @@ class OverseerAgent(Agent):
     
     def _load_agent_registry(self) -> None:
         """
-        Charge dynamiquement tous les agents disponibles dans le registre
+        Charge dynamiquement tous les agents disponibles depuis le registre centralisé
+        UTILISE LE REGISTRE DYNAMIQUE - PLUS DE LISTES HARDCODÉES !
         """
-        # Liste des superviseurs selon la documentation
-        supervisor_names = [
-            "ScrapingSupervisor",
-            "QualificationSupervisor",
-            "ProspectionSupervisor"
-        ]
+        # Import du registre centralisé
+        from utils.agent_definitions import get_agents_by_category, get_agent_definition
         
-        # Liste des agents opérationnels selon la documentation
-        operational_agent_names = [
-            "NicheExplorerAgent",
-            "ScraperAgent",
-            "CleanerAgent",
-            "ScoringAgent",
-            "ValidatorAgent",
-            "DuplicateCheckerAgent",
-            "MessagingAgent",
-            "FollowUpAgent",
-            "ResponseInterpreterAgent",
-            "AgentSchedulerAgent",
-            "PivotStrategyAgent",
-            "LoggerAgent",
-            "AdminInterpreterAgent",
-            "NicheClassifierAgent",
-            "VisualAnalyzerAgent",
-            "DatabaseQueryAgent"  # Ajout de notre nouvel agent de requêtes de base de données
-        ]
-        
-        # Construction des chemins de modules pour les superviseurs
-        for name in supervisor_names:
-            # Convert camelCase name to snake_case
-            base_name = ''.join(['_' + c.lower() if c.isupper() else c.lower() for c in name]).lstrip('_')
-            
-            # Construct the correct module path with snake_case
-            module_name = f"agents.{base_name}.{base_name}"
-            
+        # Chargement des superviseurs depuis le registre
+        supervisor_definitions = get_agents_by_category("supervisor")
+        for agent_def in supervisor_definitions:
+            name = agent_def["name"]
             self.supervisors[name] = {
-                "module": module_name,
-                "class": name,
+                "module": agent_def["module_path"],
+                "class": agent_def["class_name"],
                 "status": "inactive"
             }
         
-        # Construction des chemins de modules pour les agents opérationnels
-        for name in operational_agent_names:
-            # Convert camelCase agent name to snake_case module name
-            base_name = name[:-5]  # Remove "Agent" suffix
-            module_base = ''.join(['_' + c.lower() if c.isupper() else c.lower() for c in base_name]).lstrip('_')
-            
-            # Construct the correct module path with snake_case
-            module_name = f"agents.{module_base}.{module_base}_agent"
-            
-            self.operational_agents[name] = {
-                "module": module_name,
-                "class": name,
-                "status": "inactive"
-            }
+        # Chargement des agents opérationnels depuis le registre (toutes catégories sauf supervisor)
+        operational_categories = ["scraping", "qualification", "prospection", "analytics", "utility", "core"]
+        for category in operational_categories:
+            agents_in_category = get_agents_by_category(category)
+            for agent_def in agents_in_category:
+                name = agent_def["name"]
+                # Éviter les doublons avec les superviseurs
+                if name not in self.supervisors:
+                    self.operational_agents[name] = {
+                        "module": agent_def["module_path"],
+                        "class": agent_def["class_name"],
+                        "status": "inactive"
+                    }
         
         # Mise à jour du registre global
         self.agent_registry = {
@@ -351,7 +323,10 @@ class OverseerAgent(Agent):
         Returns:
             Résultat du traitement de l'instruction
         """
+        # Ignorer l'action "handle_admin_instruction" elle-même
         action = instruction.get("action")
+        if action == "handle_admin_instruction":
+            action = None
         
         if action == "update_config":
             # Mise à jour de configuration
@@ -383,14 +358,22 @@ class OverseerAgent(Agent):
             )
         
         else:
-            # Action non reconnue
-            error_message = f"Action non reconnue: {action}"
-            self.speak(error_message, target="AdminInterpreterAgent")
-            
-            return {
-                "status": "error",
-                "message": error_message
-            }
+            # Action non reconnue ou pas d'action fournie
+            if action is None:
+                # Pas d'action spécifiée, retourner un succès par défaut
+                return {
+                    "status": "success",
+                    "message": "OverseerAgent en fonctionnement, aucune action spécifique demandée"
+                }
+            else:
+                # Action non reconnue
+                error_message = f"Action non reconnue: {action}"
+                self.speak(error_message, target="AdminInterpreterAgent")
+                
+                return {
+                    "status": "error",
+                    "message": error_message
+                }
     
     def orchestrate_workflow(self, workflow_name: str, workflow_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -416,8 +399,7 @@ class OverseerAgent(Agent):
                 {"agent": "ScraperAgent", "input_key": None, "output_key": "leads"},
                 {"agent": "CleanerAgent", "input_key": "leads", "output_key": "cleaned_leads"},
                 {"agent": "ScoringAgent", "input_key": "cleaned_leads", "output_key": "scored_leads"},
-                {"agent": "ValidatorAgent", "input_key": "scored_leads", "output_key": "validated_leads"},
-                {"agent": "DuplicateCheckerAgent", "input_key": "validated_leads", "output_key": "final_leads"}
+                {"agent": "DuplicateCheckerAgent", "input_key": "scored_leads", "output_key": "final_leads"}
             ],
             "messaging_workflow": [
                 {"agent": "MessagingAgent", "input_key": None, "output_key": "sent_messages"},
@@ -595,6 +577,10 @@ class OverseerAgent(Agent):
                     "message": "Impossible d'analyser l'instruction",
                     "raw_response": llm_response
                 }
+        
+        # Si l'action est handle_admin_instruction mais sans instruction spécifique
+        if input_data.get("action") == "handle_admin_instruction":
+            return self.handle_admin_instruction(input_data)
         
         # Cas par défaut
         return {

@@ -56,9 +56,16 @@ class DuplicateCheckerAgent(Agent):
         
         if not leads:
             return {
-                "status": "error",
-                "message": "Aucun lead à vérifier",
-                "leads": []
+                "status": "success",
+                "message": "Aucun lead à vérifier - liste vide",
+                "unique_leads": [],
+                "duplicates": [],
+                "stats": {
+                    "total": 0,
+                    "unique": 0,
+                    "internal_duplicates": 0,
+                    "database_duplicates": 0
+                }
             }
         
         self.speak(f"Vérification des doublons pour {len(leads)} leads de la niche '{niche}'", target="QualificationSupervisor")
@@ -276,7 +283,7 @@ class DuplicateCheckerAgent(Agent):
         """
         action = input_data.get("action", "check")
         
-        if action == "check":
+        if action == "check" or action == "check_duplicates":
             return self.check_duplicates(input_data)
         
         elif action == "get_stats":

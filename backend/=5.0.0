@@ -1,0 +1,11 @@
+Collecting stripe
+  Downloading stripe-12.3.0-py2.py3-none-any.whl (1.6 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.6/1.6 MB 13.5 MB/s eta 0:00:00
+Requirement already satisfied: typing_extensions>=4.5.0 in ./venv/lib/python3.10/site-packages (from stripe) (4.13.2)
+Requirement already satisfied: requests>=2.20 in ./venv/lib/python3.10/site-packages (from stripe) (2.32.3)
+Requirement already satisfied: urllib3<3,>=1.21.1 in ./venv/lib/python3.10/site-packages (from requests>=2.20->stripe) (2.4.0)
+Requirement already satisfied: certifi>=2017.4.17 in ./venv/lib/python3.10/site-packages (from requests>=2.20->stripe) (2025.1.31)
+Requirement already satisfied: idna<4,>=2.5 in ./venv/lib/python3.10/site-packages (from requests>=2.20->stripe) (3.10)
+Requirement already satisfied: charset-normalizer<4,>=2 in ./venv/lib/python3.10/site-packages (from requests>=2.20->stripe) (3.4.1)
+Installing collected packages: stripe
+Successfully installed stripe-12.3.0

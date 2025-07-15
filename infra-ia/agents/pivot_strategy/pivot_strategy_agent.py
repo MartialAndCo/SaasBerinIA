@@ -82,57 +82,77 @@ class PivotStrategyAgent(Agent):
     
     def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Implémentation de la méthode run() principale
+        Point d'entrée principal du PivotStrategyAgent
         
         Args:
-            input_data: Les données d'entrée
+            input_data: Données d'entrée avec l'action à effectuer
             
         Returns:
-            Les données de sortie
+            Résultat de l'action demandée
         """
         action = input_data.get("action", "")
         
-        # Traitement selon l'action demandée
-        if action == "analyze_campaign":
-            # Analyse d'une campagne spécifique
+        if action == "analyze_and_recommend":
+            return self.analyze_and_recommend(input_data)
+        elif action == "contact_niche_explorer":
+            return self._contact_niche_explorer(input_data)
+        elif action == "analyze_performance":
+            return {"status": "success", "analysis": self._analyze_performance(input_data)}
+        elif action == "analyze_campaign":
             return self.analyze_campaign(
-                input_data.get("campaign_id"),
+                input_data.get("campaign_id", ""),
                 input_data.get("detail_level", "full")
             )
-        
         elif action == "analyze_niche":
-            # Analyse d'une niche spécifique
             return self.analyze_niche(
-                input_data.get("niche"),
+                input_data.get("niche", ""),
                 input_data.get("time_period", "all")
             )
-        
         elif action == "recommend_optimizations":
-            # Recommandation d'optimisations basées sur les données
             return self.recommend_optimizations(
                 input_data.get("target", "all"),
                 input_data.get("optimization_type", "all")
             )
-        
-        elif action == "store_learning":
-            # Stockage d'un apprentissage pour référence future
-            return self.store_learning(
-                input_data.get("learning_data", {}),
-                input_data.get("category", "general")
-            )
-        
         elif action == "get_insights":
-            # Récupération d'insights basés sur des mots-clés
             return self.get_insights(
                 input_data.get("keywords", []),
                 input_data.get("context", "prospection")
             )
-        
+        elif action == "store_learning":
+            return self.store_learning(
+                input_data.get("learning_data", {}),
+                input_data.get("category", "general")
+            )
+        elif action == "get_stats":
+            return {
+                "status": "success",
+                "agent_type": "PivotStrategyAgent",
+                "available_actions": [
+                    "analyze_and_recommend",
+                    "contact_niche_explorer",
+                    "analyze_performance",
+                    "analyze_campaign",
+                    "analyze_niche",
+                    "recommend_optimizations",
+                    "get_insights",
+                    "store_learning"
+                ]
+            }
         else:
-            # Action non reconnue
             return {
                 "status": "error",
-                "message": f"Action non reconnue: {action}"
+                "message": f"Action non reconnue: {action}",
+                "available_actions": [
+                    "analyze_and_recommend",
+                    "contact_niche_explorer",
+                    "analyze_performance",
+                    "analyze_campaign",
+                    "analyze_niche",
+                    "recommend_optimizations",
+                    "get_insights",
+                    "store_learning",
+                    "get_stats"
+                ]
             }
     
     def analyze_campaign(self, campaign_id: str, detail_level: str = "full") -> Dict[str, Any]:
@@ -534,19 +554,36 @@ class PivotStrategyAgent(Agent):
             insights = []
             for item in knowledge_results:
                 try:
-                    content = json.loads(item["content"])
-                    insights.append({
-                        "content": content,
-                        "metadata": item["metadata"],
-                        "score": item.get("score", 0)
-                    })
-                except:
-                    # Si le contenu n'est pas un JSON valide
-                    insights.append({
-                        "content": item["content"],
-                        "metadata": item["metadata"],
-                        "score": item.get("score", 0)
-                    })
+                    # La clé est "document" et non "content" dans query_knowledge
+                    document_content = item.get("document", "")
+                    metadata = item.get("metadata", {})
+                    score = item.get("score", 0)
+                    
+                    # Essayer de parser le contenu JSON
+                    try:
+                        if document_content and isinstance(document_content, str):
+                            parsed_content = json.loads(document_content)
+                            insights.append({
+                                "content": parsed_content,
+                                "metadata": metadata,
+                                "score": score
+                            })
+                        else:
+                            insights.append({
+                                "content": document_content,
+                                "metadata": metadata,
+                                "score": score
+                            })
+                    except json.JSONDecodeError:
+                        insights.append({
+                            "content": document_content,
+                            "metadata": metadata,
+                            "score": score
+                        })
+                except Exception as e:
+                    # Log de l'erreur pour debug
+                    print(f"Erreur traitement insight: {e}")
+                    continue
             
             self.speak(
                 f"Récupération de {len(insights)} insights pour les mots-clés: {', '.join(keywords)}",
@@ -813,3 +850,441 @@ class PivotStrategyAgent(Agent):
         
         # Construction du prompt
         prompt = self.build_prompt(prompt_data)
+        
+        # Appel au LLM pour générer les recommandations
+        try:
+            llm_response = LLMService.call_llm(prompt, complexity="high")
+            recommendations = json.loads(llm_response)
+            
+            return recommendations if isinstance(recommendations, list) else [recommendations]
+            
+        except Exception as e:
+            # Fallback: recommandations basiques basées sur les problèmes détectés
+            fallback_recommendations = []
+            
+            for issue in issues:
+                if issue["metric"] == "open_rate" and issue["type"] == "poor_performance":
+                    fallback_recommendations.append({
+                        "type": "subject_line",
+                        "priority": "high",
+                        "recommendation": "Améliorer les lignes d'objet pour augmenter le taux d'ouverture",
+                        "reason": "Taux d'ouverture faible détecté"
+                    })
+                
+                elif issue["metric"] == "response_rate" and issue["type"] == "poor_performance":
+                    fallback_recommendations.append({
+                        "type": "content",
+                        "priority": "high", 
+                        "recommendation": "Revoir le contenu des messages pour inciter plus de réponses",
+                        "reason": "Taux de réponse faible"
+                    })
+            
+            return fallback_recommendations
+    
+    def _contact_niche_explorer(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Communique avec le NicheExplorerAgent pour obtenir des insights
+        
+        Args:
+            input_data: Données d'entrée pour la communication
+            
+        Returns:
+            Résultats de la communication avec NicheExplorerAgent
+        """
+        try:
+            from agents.overseer.overseer_agent import OverseerAgent
+            overseer = OverseerAgent()
+            
+            # Communication avec NicheExplorerAgent
+            result = overseer.execute_agent("NicheExplorerAgent", {
+                "action": "strategic_recommendations",
+                "current_niches": input_data.get("current_niches", []),
+                "context": "performance_analysis"
+            })
+            
+            return {
+                "status": "success",
+                "niche_explorer_response": result,
+                "message": "Communication avec NicheExplorerAgent réussie"
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Erreur communication NicheExplorerAgent: {str(e)}"
+            }
+    
+    def _analyze_performance(self, performance_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Analyse les données de performance et fournit des insights
+        
+        Args:
+            performance_data: Données de performance à analyser
+            
+        Returns:
+            Analyse des performances
+        """
+        try:
+            conversion_rate = performance_data.get("conversion_rate", 0)
+            response_rate = performance_data.get("response_rate", 0)
+            status = performance_data.get("status", "unknown")
+            
+            # Classification des performances
+            if conversion_rate >= 0.1:  # 10%+
+                performance_level = "excellent"
+                recommendation = "Maintenir la stratégie actuelle"
+            elif conversion_rate >= 0.05:  # 5-10%
+                performance_level = "good"
+                recommendation = "Optimiser pour atteindre l'excellence"
+            elif conversion_rate >= 0.02:  # 2-5%
+                performance_level = "average"
+                recommendation = "Améliorer le ciblage et les messages"
+            else:  # <2%
+                performance_level = "poor"
+                recommendation = "Revoir complètement la stratégie"
+            
+            # Analyse du taux de réponse
+            response_analysis = ""
+            if response_rate >= 0.15:  # 15%+
+                response_analysis = "Excellent engagement"
+            elif response_rate >= 0.08:  # 8-15%
+                response_analysis = "Bon engagement"
+            elif response_rate >= 0.03:  # 3-8%
+                response_analysis = "Engagement moyen"
+            else:  # <3%
+                response_analysis = "Faible engagement"
+            
+            return {
+                "performance_level": performance_level,
+                "recommendation": recommendation,
+                "response_analysis": response_analysis,
+                "conversion_rate": conversion_rate,
+                "response_rate": response_rate,
+                "detailed_analysis": {
+                    "strengths": self._identify_strengths(performance_data),
+                    "weaknesses": self._identify_weaknesses(performance_data),
+                    "opportunities": self._identify_opportunities(performance_data)
+                }
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Erreur analyse performance: {str(e)}"
+            }
+    
+    def _should_trigger_analysis(self, scenario: Dict[str, Any]) -> bool:
+        """
+        Détermine si une analyse doit être déclenchée selon le scénario
+        
+        Args:
+            scenario: Scénario à évaluer
+            
+        Returns:
+            True si l'analyse doit être déclenchée
+        """
+        scenario_type = scenario.get("type", "")
+        threshold = scenario.get("threshold", 0)
+        
+        # Règles de déclenchement
+        trigger_rules = {
+            "low_conversion": lambda t: t < 0.03,  # <3% conversion
+            "high_bounce": lambda t: t > 0.15,    # >15% bounce
+            "good_performance": lambda t: t > 0.08, # >8% conversion (pas besoin d'analyse urgente)
+            "poor_response": lambda t: t < 0.05,   # <5% réponse
+            "urgent_issue": lambda t: True,        # Toujours déclencher
+        }
+        
+        if scenario_type in trigger_rules:
+            rule = trigger_rules[scenario_type]
+            should_trigger = rule(threshold)
+            
+            # Cas spéciaux
+            if scenario_type == "good_performance":
+                return not should_trigger  # Inverse pour good_performance
+            
+            return should_trigger
+        
+        # Par défaut, ne pas déclencher pour types inconnus
+        return False
+    
+    def _identify_strengths(self, performance_data: Dict[str, Any]) -> List[str]:
+        """Identifie les points forts"""
+        strengths = []
+        
+        if performance_data.get("open_rate", 0) > 0.3:
+            strengths.append("Bon taux d'ouverture")
+        if performance_data.get("response_rate", 0) > 0.1:
+            strengths.append("Bon taux de réponse")
+        if performance_data.get("conversion_rate", 0) > 0.05:
+            strengths.append("Bon taux de conversion")
+        
+        return strengths if strengths else ["Aucun point fort identifié"]
+    
+    def _identify_weaknesses(self, performance_data: Dict[str, Any]) -> List[str]:
+        """Identifie les points faibles"""
+        weaknesses = []
+        
+        if performance_data.get("bounce_rate", 0) > 0.1:
+            weaknesses.append("Taux de rebond élevé")
+        if performance_data.get("unsubscribe_rate", 0) > 0.05:
+            weaknesses.append("Taux de désabonnement élevé")
+        if performance_data.get("response_rate", 0) < 0.03:
+            weaknesses.append("Faible taux de réponse")
+        
+        return weaknesses if weaknesses else ["Aucun point faible majeur"]
+    
+    def _identify_opportunities(self, performance_data: Dict[str, Any]) -> List[str]:
+        """Identifie les opportunités d'amélioration"""
+        opportunities = []
+        
+        open_rate = performance_data.get("open_rate", 0)
+        response_rate = performance_data.get("response_rate", 0)
+        
+        if open_rate > 0.3 and response_rate < 0.1:
+            opportunities.append("Améliorer le contenu pour convertir les ouvertures en réponses")
+        
+        if performance_data.get("click_rate", 0) > 0.1 and performance_data.get("conversion_rate", 0) < 0.05:
+            opportunities.append("Optimiser le landing page pour convertir les clics")
+        
+        return opportunities if opportunities else ["Optimisation générale recommandée"]
+    
+    def analyze_and_recommend(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Analyse complète et recommandations pour les campagnes actuelles
+        
+        Args:
+            input_data: Données d'entrée avec campagnes et données de performance
+            
+        Returns:
+            Analyse complète avec recommandations
+        """
+        try:
+            current_campaigns = input_data.get("current_campaigns", [])
+            performance_data = input_data.get("performance_data", {})
+            
+            # Analyse de chaque campagne
+            campaign_analyses = []
+            overall_recommendations = []
+            
+            for campaign in current_campaigns:
+                # Analyser les performances de la campagne
+                campaign_perf = performance_data.get(campaign, {})
+                analysis = self._analyze_performance(campaign_perf)
+                
+                campaign_analyses.append({
+                    "campaign": campaign,
+                    "analysis": analysis
+                })
+                
+                # Ajouter des recommandations spécifiques
+                if analysis.get("performance_level") == "poor":
+                    overall_recommendations.append({
+                        "type": "campaign_optimization",
+                        "campaign": campaign,
+                        "priority": "urgente",
+                        "recommendation": f"Optimiser ou arrêter la campagne {campaign}",
+                        "reason": "Performance en dessous des attentes"
+                    })
+            
+            # Recommandations stratégiques globales
+            strategic_recommendations = [
+                {
+                    "type": "targeting",
+                    "priority": "haute",
+                    "recommendation": "Affiner le ciblage TPE/PME",
+                    "reason": "Améliorer la pertinence des contacts"
+                },
+                {
+                    "type": "content",
+                    "priority": "moyenne",
+                    "recommendation": "Personnaliser davantage les messages",
+                    "reason": "Augmenter l'engagement"
+                },
+                {
+                    "type": "timing",
+                    "priority": "moyenne",
+                    "recommendation": "Optimiser les horaires d'envoi",
+                    "reason": "Maximiser les taux d'ouverture"
+                }
+            ]
+            
+            # Communication avec NicheExplorerAgent pour insights supplémentaires
+            niche_insights = self._contact_niche_explorer({
+                "current_niches": [campaign.split("_")[0] for campaign in current_campaigns if "_" in campaign],
+                "action": "analyze_opportunities"
+            })
+            
+            return {
+                "status": "success",
+                "campaign_analyses": campaign_analyses,
+                "overall_recommendations": overall_recommendations + strategic_recommendations,
+                "niche_insights": niche_insights,
+                "summary": {
+                    "campaigns_analyzed": len(current_campaigns),
+                    "poor_performers": len([c for c in campaign_analyses if c["analysis"].get("performance_level") == "poor"]),
+                    "good_performers": len([c for c in campaign_analyses if c["analysis"].get("performance_level") in ["good", "excellent"]])
+                },
+                "analysis_date": datetime.datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Erreur analyse et recommandations: {str(e)}"
+            }
+    
+    def _aggregate_metrics(self, metrics_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Agrège les métriques de plusieurs campagnes
+        
+        Args:
+            metrics_list: Liste des métriques à agréger
+            
+        Returns:
+            Métriques agrégées
+        """
+        if not metrics_list:
+            return {}
+        
+        aggregated = defaultdict(list)
+        
+        # Collecte de toutes les valeurs
+        for metrics in metrics_list:
+            for key, value in metrics.items():
+                if isinstance(value, (int, float)):
+                    aggregated[key].append(value)
+        
+        # Calcul des moyennes et totaux
+        result = {}
+        for key, values in aggregated.items():
+            if key.endswith('_count'):
+                # Pour les compteurs, on fait la somme
+                result[key] = sum(values)
+            else:
+                # Pour les taux, on fait la moyenne
+                result[key] = statistics.mean(values) if values else 0
+        
+        return result
+    
+    def _analyze_trends(self, metrics_list: List[Dict[str, Any]], campaigns: List[str]) -> Dict[str, Any]:
+        """
+        Analyse les tendances dans les métriques au fil du temps
+        
+        Args:
+            metrics_list: Liste des métriques chronologiques
+            campaigns: Liste des campagnes correspondantes
+            
+        Returns:
+            Analyse des tendances
+        """
+        if len(metrics_list) < 2:
+            return {"trend": "insufficient_data", "message": "Données insuffisantes pour analyser les tendances"}
+        
+        trends = {}
+        
+        # Analyse de la tendance pour chaque métrique
+        for metric in ['open_rate', 'response_rate', 'conversion_rate']:
+            values = [m.get(metric, 0) for m in metrics_list if metric in m]
+            
+            if len(values) >= 2:
+                # Calcul de la tendance (simple régression linéaire)
+                x_values = list(range(len(values)))
+                if len(set(values)) > 1:  # Si les valeurs ne sont pas toutes identiques
+                    # Calcul du coefficient de corrélation comme approximation de tendance
+                    mean_x = statistics.mean(x_values)
+                    mean_y = statistics.mean(values)
+                    
+                    numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, values))
+                    denominator_x = sum((x - mean_x) ** 2 for x in x_values)
+                    
+                    if denominator_x > 0:
+                        slope = numerator / denominator_x
+                        
+                        if slope > 0.01:
+                            trends[metric] = "increasing"
+                        elif slope < -0.01:
+                            trends[metric] = "decreasing"
+                        else:
+                            trends[metric] = "stable"
+                    else:
+                        trends[metric] = "stable"
+                else:
+                    trends[metric] = "stable"
+        
+        return trends
+    
+    def _compare_to_other_niches(self, niche: str, all_niches: List[str]) -> Dict[str, Any]:
+        """
+        Compare les performances d'une niche aux autres
+        
+        Args:
+            niche: Niche à comparer
+            all_niches: Liste de toutes les niches
+            
+        Returns:
+            Comparaison avec les autres niches
+        """
+        try:
+            from core.db import get_niche_performance_summary
+            
+            # Récupération des performances de la niche actuelle
+            current_performance = get_niche_performance_summary(niche)
+            
+            # Récupération des performances des autres niches
+            other_performances = []
+            for other_niche in all_niches:
+                if other_niche != niche:
+                    perf = get_niche_performance_summary(other_niche)
+                    if perf:
+                        other_performances.append(perf)
+            
+            if not other_performances:
+                return {"comparison": "no_data", "message": "Aucune autre niche pour comparaison"}
+            
+            # Calcul des moyennes des autres niches
+            avg_others = {}
+            for metric in ['conversion_rate', 'response_rate', 'open_rate']:
+                values = [perf.get(metric, 0) for perf in other_performances if metric in perf]
+                if values:
+                    avg_others[metric] = statistics.mean(values)
+            
+            # Comparaison
+            comparison = {}
+            for metric in avg_others:
+                current_value = current_performance.get(metric, 0)
+                other_avg = avg_others[metric]
+                
+                if current_value > other_avg * 1.2:  # 20% de mieux
+                    comparison[metric] = "above_average"
+                elif current_value < other_avg * 0.8:  # 20% de moins
+                    comparison[metric] = "below_average"
+                else:
+                    comparison[metric] = "average"
+            
+            return {
+                "comparison": comparison,
+                "current_performance": current_performance,
+                "market_averages": avg_others
+            }
+            
+        except Exception as e:
+            return {
+                "comparison": "error",
+                "message": f"Erreur lors de la comparaison: {str(e)}"
+            }
+
+
+# Si ce script est exécuté directement
+if __name__ == "__main__":
+    # Création d'une instance du PivotStrategyAgent
+    agent = PivotStrategyAgent()
+    
+    # Test de l'agent
+    result = agent.run({
+        "action": "analyze_campaign",
+        "campaign_id": "test_campaign_001",
+        "detail_level": "full"
+    })
+    
+    print(json.dumps(result, indent=2))

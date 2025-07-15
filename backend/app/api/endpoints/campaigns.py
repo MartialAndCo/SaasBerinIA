@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from sqlalchemy import func
+from sqlalchemy import func, text
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 
@@ -33,10 +33,10 @@ def get_campaigns(
     query = db.query(CampaignModel)
 
     if search:
-        query = query.filter(CampaignModel.nom.ilike(f"%{search}%"))
+        query = query.filter(CampaignModel.name.ilike(f"%{search}%"))
 
     if status:
-        query = query.filter(CampaignModel.statut == status)
+        query = query.filter(CampaignModel.status == status)
 
     if niche_id:
         query = query.filter(CampaignModel.niche_id == niche_id)
@@ -56,7 +56,7 @@ def get_campaigns(
         total_leads = db.query(func.count(LeadModel.id)).filter(LeadModel.campagne_id == campaign.id).scalar() or 0
         converted_leads = db.query(func.count(LeadModel.id)).filter(
             LeadModel.campagne_id == campaign.id,
-            LeadModel.statut == "converted"
+            LeadModel.status == "qualified"  # Utiliser le vrai statut "qualified"
         ).scalar() or 0
 
         if total_leads > 0:
@@ -86,7 +86,7 @@ def get_campaign(campaign_id: int, db: Session = Depends(deps.get_db)):
     total_leads = db.query(func.count(LeadModel.id)).filter(LeadModel.campagne_id == campaign.id).scalar() or 0
     converted_leads = db.query(func.count(LeadModel.id)).filter(
         LeadModel.campagne_id == campaign.id,
-        LeadModel.statut == "converted"
+        LeadModel.status == "qualified"  # Utiliser le vrai statut "qualified"
     ).scalar() or 0
 
     if total_leads > 0:
@@ -157,16 +157,21 @@ def delete_campaign(campaign_id: int, db: Session = Depends(deps.get_db)):
     leads_count = db.query(func.count(LeadModel.id)).filter(LeadModel.campagne_id == campaign_id).scalar() or 0
     
     if leads_count > 0:
-        # Option 1: Dissocier les leads (mettre campagne_id à NULL)
+        # Dissocier les leads (mettre campagne_id à NULL)
         db.query(LeadModel).filter(LeadModel.campagne_id == campaign_id).update(
             {"campagne_id": None}, synchronize_session=False
         )
-        
-        # Option 2: Alternative - Empêcher la suppression
-        # raise HTTPException(
-        #     status_code=400, 
-        #     detail=f"Impossible de supprimer la campagne. {leads_count} leads y sont associés."
-        # )
+    
+    # Vérifier et gérer les messages associés
+    try:
+        # Dissocier les messages (mettre campaign_id à NULL) 
+        db.execute(
+            text("UPDATE messages SET campaign_id = NULL WHERE campaign_id = :campaign_id"),
+            {"campaign_id": campaign_id}
+        )
+    except Exception:
+        # Si la table messages n'existe pas encore, on continue
+        pass
     
     try:
         db.delete(db_campaign)

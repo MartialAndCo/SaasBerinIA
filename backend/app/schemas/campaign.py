@@ -4,10 +4,12 @@ from datetime import datetime
 
 class CampaignBase(BaseModel):
     nom: str = Field(..., alias="name")  # ✅ Alias pour compatibilité
+    ville: Optional[str] = None  # NOUVELLE COLONNE
     description: Optional[str] = None
     niche_id: int
     target_leads: Optional[int] = 0
     agent: Optional[str] = None
+    instantly_campaign_id: Optional[str] = None  # ID de la campagne dans Instantly.ai
 
 class CampaignCreate(CampaignBase):
     pass
@@ -19,6 +21,7 @@ class CampaignUpdate(BaseModel):
     niche_id: Optional[int] = None
     target_leads: Optional[int] = None
     agent: Optional[str] = None
+    instantly_campaign_id: Optional[str] = None
 
 class Campaign(CampaignBase):
     id: int
@@ -27,6 +30,7 @@ class Campaign(CampaignBase):
     leads: Optional[int] = 0
     conversion: Optional[float] = 0.0
     progress: Optional[int] = 0
+    instantly_campaign_id: Optional[str] = None
 
     class Config:
         from_attributes = True

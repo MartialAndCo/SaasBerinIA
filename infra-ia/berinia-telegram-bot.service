@@ -1,0 +1,26 @@
+[Unit]
+Description=BerinIA Telegram Bot
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/berinia/infra-ia/telegram_bot
+Environment=PATH=/root/berinia/infra-ia/.venv/bin
+Environment=PYTHONPATH=/root/berinia/infra-ia/telegram_bot
+ExecStart=/root/berinia/infra-ia/.venv/bin/python main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Limites de ressources
+MemoryMax=500M
+CPUQuota=25%
+
+# Variables d'environnement
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

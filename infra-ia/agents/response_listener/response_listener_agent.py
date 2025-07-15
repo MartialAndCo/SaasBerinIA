@@ -11,7 +11,7 @@ from core.agent_base import Agent
 from utils.llm import LLMService
 from utils.logger import get_logger
 from utils.qdrant import create_embedding, create_collection
-from utils.api_clients.instantly_client import InstantlyClient
+# from utils.api_clients.instantly_client import InstantlyClient  # SUPPRIMÉ - Migration vers SMTP
 from core.db import DatabaseService
 
 class ResponseListenerAgent(Agent):
@@ -46,13 +46,9 @@ class ResponseListenerAgent(Agent):
             "last_activity": None
         }
         
-        # Initialisation du client Instantly.ai si nécessaire
-        api_key = self.config.get("instantly_api_key") or os.getenv("INSTANTLY_API_KEY", "")
-        if api_key:
-            self.instantly_client = InstantlyClient(api_key=api_key)
-            self.speak("Client Instantly.ai initialisé", target="OverseerAgent")
-        else:
-            self.instantly_client = None
+        # Initialisation du client Instantly.ai désactivée (migration vers SMTP)
+        self.instantly_client = None
+        self.speak("Client Instantly.ai désactivé - migration vers SMTP", target="OverseerAgent")
         
         # Initialisation de la base de données
         self.db = DatabaseService()
@@ -109,9 +105,20 @@ class ResponseListenerAgent(Agent):
         Returns:
             Résultat du traitement
         """
-        # Vérifier si c'est un webhook Instantly.ai
-        if "event_type" in data and self.instantly_client:
-            return self._process_instantly_webhook(data)
+        # Vérifier si c'est un webhook Instantly.ai (DÉSACTIVÉ - migration vers SMTP)
+        is_instantly_webhook = (
+            "event_type" in data or           # Format avec event_type explicite
+            "body" in data or                 # Format reply standard Instantly
+            "lead" in data or                 # Format lead standard Instantly
+            ("campaign_id" in data and "timestamp_email" in data)  # Format webhook Instantly
+        )
+        
+        if is_instantly_webhook:
+            self.speak("Webhook Instantly détecté mais traitement désactivé - migration vers SMTP", target="OverseerAgent")
+            return {
+                "status": "disabled", 
+                "message": "Instantly webhook processing disabled - migrated to SMTP"
+            }
         
         self.speak(f"Réception d'une réponse par email de {data.get('sender')}", target="OverseerAgent")
         
@@ -232,8 +239,12 @@ class ResponseListenerAgent(Agent):
         self.speak(f"Réception d'un webhook Instantly.ai de type {data.get('event_type', 'inconnu')}", target="OverseerAgent")
         
         try:
-            # Utiliser le client Instantly pour analyser le webhook
-            webhook_data = self.instantly_client.parse_webhook(data)
+            # Traitement webhook Instantly désactivé (migration vers SMTP)
+            self.speak("Webhook Instantly reçu mais traitement désactivé - migration vers SMTP", target="OverseerAgent")
+            return {
+                "status": "disabled",
+                "message": "Instantly webhook processing disabled - migrated to SMTP"
+            }
             
             event_type = webhook_data.get("event_type", "unknown")
             lead_email = webhook_data.get("lead_email", "")

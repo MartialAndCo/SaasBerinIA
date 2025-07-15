@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Send, Settings, Bot, BotOff, MoreVertical, Users, MessageSquare, Clock, CheckCheck } from "lucide-react"
+import { Search, Send, Settings, Bot, BotOff, MoreVertical, Users, MessageSquare, Clock, CheckCheck, FlaskConical } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -55,6 +56,7 @@ interface MessageStats {
 }
 
 export default function MessagingPage() {
+  const router = useRouter()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -68,6 +70,11 @@ export default function MessagingPage() {
   const [stats, setStats] = useState<MessageStats | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Navigation vers le sandbox
+  const handleSandboxClick = () => {
+    router.push('/dashboard/sandbox')
+  }
 
   // Auto-scroll vers le bas quand de nouveaux messages arrivent
   const scrollToBottom = () => {
@@ -367,6 +374,14 @@ export default function MessagingPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleSandboxClick}
+            className="bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-300 text-orange-700 hover:from-orange-100 hover:to-yellow-100"
+          >
+            <FlaskConical className="mr-2 h-4 w-4" />
+            🧪 Sandbox
+          </Button>
           <Button
             variant={aiEnabled ? "default" : "outline"}
             onClick={toggleGlobalAi}

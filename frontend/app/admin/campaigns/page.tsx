@@ -23,6 +23,7 @@ import { toast } from "@/components/ui/use-toast"
 interface Campaign {
   id: number
   name: string
+  ville?: string  // NOUVELLE COLONNE depuis la refactorisation
   description?: string
   status: string
   created_at: string
@@ -165,7 +166,7 @@ export default function CampagnesPage() {
   // Gérer l'activation d'une campagne
   const handleActivateCampaign = async (id: number) => {
     try {
-      const response = await apiRequest(`/api/campaigns/${id}`, {
+      const response = await apiRequest(`/api/campaigns/${id}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status: "active" }),
       });
@@ -247,7 +248,7 @@ export default function CampagnesPage() {
   // Gérer la suppression d'une campagne
   const handleDeleteCampaign = async (id: number) => {
     try {
-      await apiRequest(`/api/campaigns/${id}`, {
+      await apiRequest(`/api/campaigns/${id}/status`, {
         method: 'DELETE',
       });
       
@@ -405,6 +406,7 @@ export default function CampagnesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nom</TableHead>
+                    <TableHead>Ville</TableHead>
                     <TableHead>Agent</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead>Objectif</TableHead>
@@ -422,6 +424,15 @@ export default function CampagnesPage() {
                         <div className="text-sm text-muted-foreground max-w-xs truncate">
                           {campaign.description || "Pas de description"}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {campaign.ville ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                            {campaign.ville}
+                          </Badge>
+                        ) : (
+                          <span className="text-red-500 text-sm">⚠️ Ville manquante</span>
+                        )}
                       </TableCell>
                       <TableCell>{campaign.agent || "Agent non spécifié"}</TableCell>
                       <TableCell>

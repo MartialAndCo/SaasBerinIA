@@ -1,5 +1,5 @@
 """
-Module du ScoringAgent - Agent qui attribue un score aux leads
+Module du ScoringAgent - Agent qui attribue un score aux leads (REFONTE TPE/PME)
 """
 import os
 import json
@@ -11,17 +11,17 @@ from utils.llm import LLMService
 
 class ScoringAgent(Agent):
     """
-    ScoringAgent - Agent qui attribue un score à chaque lead selon des critères business
+    ScoringAgent - Agent qui attribue un score intelligent aux leads avec LLM (TPE/PME focus)
     
     Cet agent est responsable de:
-    - Évaluer la qualité des leads selon des critères prédéfinis
-    - Attribuer un score de 0 à 10 à chaque lead
-    - Déterminer la probabilité de conversion
+    - Évaluer la qualité des leads selon des critères business TPE/PME
+    - Attribuer un score de 0 à 10 à chaque lead avec intelligence contextuelle
+    - Déterminer la probabilité de conversion adaptée aux petites entreprises
     """
     
     def __init__(self, config_path: Optional[str] = None):
         """
-        Initialisation du ScoringAgent
+        Initialisation du ScoringAgent - MAINTENANT 100% LLM INTELLIGENT
         
         Args:
             config_path: Chemin optionnel vers le fichier de configuration
@@ -37,45 +37,30 @@ class ScoringAgent(Agent):
             "low_quality_leads": 0
         }
         
-        # Chargement des critères de scoring
-        self.scoring_criteria = self.config.get("scoring_criteria", {
-            "position_weight": 0.3,
-            "company_size_weight": 0.2,
-            "email_quality_weight": 0.15,
-            "data_completeness_weight": 0.15,
-            "industry_fit_weight": 0.2
+        # Configuration LLM pour scoring intelligent
+        self.llm_scoring_enabled = self.config.get("llm_scoring_enabled", True)
+        self.scoring_complexity = self.config.get("scoring_complexity", "medium")
+        
+        # Configuration business TPE/PME
+        self.business_model = self.config.get("business_model", "tpe_pme_ai_solutions")
+        self.target_sectors = self.config.get("target_sectors", [
+            "salon de coiffure", "garage automobile", "restaurant", 
+            "cabinet médical", "cabinet dentaire", "plombier", "électricien",
+            "commerce de proximité", "artisan", "services locaux"
+        ])
+        
+        # Seuils de qualité (adaptés TPE/PME)
+        self.quality_thresholds = self.config.get("quality_thresholds", {
+            "high_quality": 7.0,
+            "medium_quality": 4.0,
+            "minimum_score": 1.0
         })
         
-        # Dictionnaires de scoring
-        self.position_scores = self.config.get("position_scores", {
-            "CEO": 10,
-            "CTO": 9,
-            "CFO": 9,
-            "CMO": 8,
-            "COO": 8,
-            "Founder": 10,
-            "Co-founder": 9,
-            "Owner": 9,
-            "Director": 7,
-            "VP": 7,
-            "Head of": 6,
-            "Manager": 5
-        })
-        
-        self.company_size_scores = self.config.get("company_size_scores", {
-            "1-10": 3,
-            "11-50": 5,
-            "51-200": 7,
-            "201-500": 9,
-            "501-1000": 8,
-            "1001-5000": 6,
-            "5001-10000": 4,
-            "10000+": 3
-        })
+        self.speak("ScoringAgent initialisé avec intelligence LLM pour business TPE/PME", target="QualificationSupervisor")
     
     def score_leads(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Attribue un score à chaque lead de la liste
+        Attribue un score intelligent à chaque lead de la liste
         
         Args:
             input_data: Données d'entrée contenant les leads à scorer
@@ -85,6 +70,7 @@ class ScoringAgent(Agent):
         """
         leads = input_data.get("leads", [])
         niche = input_data.get("niche", "")
+        context = input_data.get("context", {})
         
         if not leads:
             return {
@@ -93,7 +79,7 @@ class ScoringAgent(Agent):
                 "leads": []
             }
         
-        self.speak(f"Scoring de {len(leads)} leads pour la niche '{niche}'", target="QualificationSupervisor")
+        self.speak(f"Scoring intelligent de {len(leads)} leads pour la niche '{niche}'", target="QualificationSupervisor")
         
         scored_leads = []
         total_score = 0.0
@@ -102,8 +88,8 @@ class ScoringAgent(Agent):
         low_quality = 0
         
         for lead in leads:
-            # Attribution d'un score au lead
-            scored_lead = self._score_lead(lead, niche)
+            # Attribution d'un score intelligent au lead
+            scored_lead = self._score_lead_with_llm(lead, niche, context)
             
             # Ajout du lead scoré à la liste
             scored_leads.append(scored_lead)
@@ -112,9 +98,9 @@ class ScoringAgent(Agent):
             score = scored_lead.get("score", 0)
             total_score += score
             
-            if score >= 7:
+            if score >= self.quality_thresholds["high_quality"]:
                 high_quality += 1
-            elif score >= 5:
+            elif score >= self.quality_thresholds["medium_quality"]:
                 medium_quality += 1
             else:
                 low_quality += 1
@@ -122,7 +108,9 @@ class ScoringAgent(Agent):
         # Mise à jour des statistiques globales
         count = len(leads)
         self.scoring_stats["total_leads_scored"] += count
-        self.scoring_stats["avg_score"] = ((self.scoring_stats["avg_score"] * (self.scoring_stats["total_leads_scored"] - count)) + total_score) / self.scoring_stats["total_leads_scored"] if self.scoring_stats["total_leads_scored"] > 0 else 0
+        if self.scoring_stats["total_leads_scored"] > 0:
+            total_previous = self.scoring_stats["total_leads_scored"] - count
+            self.scoring_stats["avg_score"] = ((self.scoring_stats["avg_score"] * total_previous) + total_score) / self.scoring_stats["total_leads_scored"]
         self.scoring_stats["high_quality_leads"] += high_quality
         self.scoring_stats["medium_quality_leads"] += medium_quality
         self.scoring_stats["low_quality_leads"] += low_quality
@@ -134,7 +122,7 @@ class ScoringAgent(Agent):
         # Log des résultats
         avg_score = total_score / count if count > 0 else 0
         self.speak(
-            f"Scoring terminé: {count} leads, score moyen: {avg_score:.1f}, {high_quality} high, {medium_quality} medium, {low_quality} low",
+            f"Scoring LLM terminé: {count} leads, score moyen: {avg_score:.1f}, {high_quality} high, {medium_quality} medium, {low_quality} low",
             target="QualificationSupervisor"
         )
         
@@ -151,188 +139,305 @@ class ScoringAgent(Agent):
             }
         }
     
-    def _score_lead(self, lead: Dict[str, Any], niche: str) -> Dict[str, Any]:
+    def _score_lead_with_llm(self, lead: Dict[str, Any], niche: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Attribue un score à un lead individuel
+        Attribue un score intelligent à un lead avec LLM (TPE/PME focus)
         
         Args:
             lead: Le lead à scorer
             niche: La niche du lead
+            context: Contexte additionnel pour le scoring
             
         Returns:
             Lead avec un score et des détails sur le scoring
         """
         # Copie du lead pour ne pas modifier l'original
         scored_lead = lead.copy()
-        score_details = {}
         
-        # 1. Score basé sur la position
-        position_score = 0
-        if "position" in lead and lead["position"]:
-            position = lead["position"]
-            
-            # Recherche de correspondance exacte ou partielle
-            if position in self.position_scores:
-                position_score = self.position_scores[position]
-            else:
-                # Recherche par mots-clés
-                for key, value in self.position_scores.items():
-                    if key.lower() in position.lower():
-                        position_score = value
-                        break
-            
-            # Score par défaut si aucune correspondance
-            if position_score == 0:
-                position_score = 3  # Score de base pour position inconnue
-        
-        # 2. Score basé sur la taille de l'entreprise
-        company_size_score = 0
-        if "company_size" in lead and lead["company_size"]:
-            company_size = lead["company_size"]
-            company_size_score = self.company_size_scores.get(company_size, 5)  # Valeur par défaut: 5
-        
-        # 3. Score basé sur la qualité de l'email
-        email_quality_score = 0
-        if "email" in lead and lead["email"]:
-            email = lead["email"].lower()
-            
-            # Email professionnel vs personnel
-            if any(domain in email for domain in ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"]):
-                email_quality_score = 3  # Email personnel
-            else:
-                email_quality_score = 8  # Email professionnel
+        if self.llm_scoring_enabled:
+            try:
+                # Scoring avec LLM intelligent
+                score_result = self._get_llm_score(lead, niche, context)
                 
-                # Bonus pour email direct (vs email générique)
-                if any(prefix in email for prefix in ["contact@", "info@", "hello@", "support@"]):
-                    email_quality_score = 5  # Email générique
-        
-        # 4. Score basé sur la complétude des données
-        data_completeness_score = 0
-        required_fields = [
-            "email", "first_name", "last_name", "company", "position", 
-            "company_website", "company_size", "industry", "country"
-        ]
-        
-        filled_fields = sum(1 for field in required_fields if field in lead and lead[field])
-        data_completeness_score = (filled_fields / len(required_fields)) * 10
-        
-        # 5. Score basé sur l'adéquation du secteur d'activité
-        industry_fit_score = 0
-        if "industry" in lead and lead["industry"]:
-            # Utilisation de LLM pour évaluer l'adéquation
-            if self.config.get("use_llm_for_industry_fit", False):
-                industry_fit_score = self._evaluate_industry_fit_with_llm(lead["industry"], niche)
-            else:
-                # Logique simple de scoring par défaut
-                relevant_industries = self.config.get("relevant_industries", {}).get(niche, [])
+                scored_lead["score"] = score_result["score"]
+                scored_lead["score_reasoning"] = score_result["reasoning"]
+                scored_lead["score_details"] = score_result["details"]
+                scored_lead["conversion_probability"] = score_result["conversion_probability"]
                 
-                if lead["industry"] in relevant_industries:
-                    industry_fit_score = 9  # Haute pertinence
-                else:
-                    # Recherche par mots-clés
-                    industry_keywords = self.config.get("industry_keywords", {}).get(niche, [])
-                    if any(keyword.lower() in lead["industry"].lower() for keyword in industry_keywords):
-                        industry_fit_score = 7  # Pertinence moyenne
-                    else:
-                        industry_fit_score = 5  # Pertinence faible
+            except Exception as e:
+                self.speak(f"Erreur LLM scoring pour lead {lead.get('lead_id', 'unknown')}: {str(e)}", target="QualificationSupervisor")
+                # Fallback vers scoring basique
+                scored_lead = self._score_lead_fallback(lead, niche)
+        else:
+            # Scoring basique si LLM désactivé
+            scored_lead = self._score_lead_fallback(lead, niche)
         
-        # Calcul du score final pondéré
-        weighted_scores = {
-            "position": position_score * self.scoring_criteria.get("position_weight", 0.3),
-            "company_size": company_size_score * self.scoring_criteria.get("company_size_weight", 0.2),
-            "email_quality": email_quality_score * self.scoring_criteria.get("email_quality_weight", 0.15),
-            "data_completeness": data_completeness_score * self.scoring_criteria.get("data_completeness_weight", 0.15),
-            "industry_fit": industry_fit_score * self.scoring_criteria.get("industry_fit_weight", 0.2)
-        }
-        
-        # Score final (arrondi à 1 décimale)
-        final_score = round(sum(weighted_scores.values()), 1)
-        
-        # Stockage des détails du scoring dans le lead
-        scored_lead["score"] = final_score
-        scored_lead["score_details"] = weighted_scores
+        # Horodatage
         scored_lead["scoring_date"] = datetime.datetime.now().isoformat()
+        scored_lead["scoring_method"] = "llm" if self.llm_scoring_enabled else "fallback"
         
         return scored_lead
     
-    def _evaluate_industry_fit_with_llm(self, industry: str, niche: str) -> float:
+    def _get_llm_score(self, lead: Dict[str, Any], niche: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Évalue l'adéquation entre un secteur d'activité et une niche en utilisant un LLM
+        Utilise le LLM pour scorer un lead de manière intelligente
         
         Args:
-            industry: Le secteur d'activité du lead
-            niche: La niche ciblée
+            lead: Le lead à scorer
+            niche: La niche du lead
+            context: Contexte additionnel
             
         Returns:
-            Score d'adéquation de 0 à 10
+            Résultat du scoring avec score, raisonnement et détails
         """
-        # Construction du prompt pour le LLM
-        prompt = f"""
-        Évalue la pertinence du secteur d'activité "{industry}" pour une prospection B2B ciblant la niche "{niche}".
-        Donne un score de 0 à 10, où:
-        - 0-3: Faible pertinence, peu d'intérêt pour cette offre
-        - 4-6: Pertinence moyenne, potentiellement intéressé
-        - 7-10: Haute pertinence, cible idéale
+        # Construction du prompt intelligent pour TPE/PME
+        # CORRECTION BUG: Conversion des datetime en string pour JSON
+        lead_copy = self._convert_datetime_to_string(lead.copy())
+        lead_info = json.dumps(lead_copy, indent=2, ensure_ascii=False)
         
-        Réponds uniquement avec un nombre entre 0 et 10.
-        """
+        prompt = f"""
+Tu es un expert en scoring de leads pour des solutions IA destinées aux TPE/PME françaises.
+
+BUSINESS MODEL : 
+Nous vendons des solutions d'automatisation IA (chatbots, téléphones IA, répondeurs intelligents) aux petites entreprises : artisans, commerçants, professions libérales, PME.
+
+LEAD À SCORER :
+{lead_info}
+
+NICHE CIBLÉE : {niche}
+
+CRITÈRES DE SCORING TPE/PME (score de 0 à 10) :
+
+1. POUVOIR DE DÉCISION (30%) :
+   - Patron/gérant/dirigeant = score élevé (même petite entreprise)
+   - "Fondateur salon de coiffure" = 9/10 (décideur direct)
+   - "Manager PME" = 7/10 (influence forte)
+   - "Assistant" = 4/10 (peut orienter vers décideur)
+
+2. ADÉQUATION BUSINESS (30%) :
+   - Secteur parfait pour l'IA : cabinet médical, garage, salon = 9/10
+   - Secteur compatible : restaurant, commerce = 7/10
+   - Secteur moins adapté : industrie lourde = 4/10
+
+3. TAILLE ENTREPRISE (20%) :
+   - TPE/PME (1-50 salariés) = SCORE ÉLEVÉ (notre cible)
+   - Artisan indépendant = 9/10
+   - Commerce local = 8/10
+   - Grande entreprise = 5/10 (pas notre cible principale)
+
+4. QUALITÉ CONTACT (20%) :
+   - Email perso patron TPE = OK (8/10) - "coiffure.martin@gmail.com" = normal
+   - Email pro entreprise = 9/10
+   - Téléphone direct = bonus
+   - Données complètes = bonus
+
+INSTRUCTIONS :
+- Une petite entreprise avec un patron contactable = EXCELLENT SCORE
+- Email Gmail d'un artisan = NORMAL, pas pénalisant
+- Privilégier accessibilité du décideur vs taille entreprise
+- Comprendre les enjeux TPE : simplicité, ROI rapide, gain de temps
+
+Réponds UNIQUEMENT en JSON :
+{{
+  "score": X.X (nombre entre 0 et 10),
+  "reasoning": "Explication courte du score attribué",
+  "details": {{
+    "decision_power": X.X,
+    "business_fit": X.X,
+    "company_size": X.X,
+    "contact_quality": X.X
+  }},
+  "conversion_probability": X.X (probabilité de 0 à 1),
+  "key_strengths": ["point fort 1", "point fort 2"],
+  "potential_concerns": ["préoccupation 1", "préoccupation 2"]
+}}
+"""
         
         try:
             # Appel au LLM
-            response = LLMService.call_llm(prompt, complexity="low")
+            response = LLMService.call_llm(prompt, complexity=self.scoring_complexity)
             
-            # Extraction du score (en supposant que le LLM répond avec un nombre)
-            score = float(response.strip())
-            
-            # Validation du score
-            score = max(0, min(10, score))  # Clamp entre 0 et 10
-            
-            return score
+            # Parsing de la réponse JSON
+            try:
+                result = json.loads(response.strip())
+                
+                # Validation des données
+                score = float(result.get("score", 5.0))
+                score = max(0.0, min(10.0, score))  # Clamp entre 0 et 10
+                
+                conversion_prob = float(result.get("conversion_probability", 0.5))
+                conversion_prob = max(0.0, min(1.0, conversion_prob))  # Clamp entre 0 et 1
+                
+                return {
+                    "score": round(score, 1),
+                    "reasoning": result.get("reasoning", "Score attribué par LLM"),
+                    "details": result.get("details", {}),
+                    "conversion_probability": round(conversion_prob, 2),
+                    "key_strengths": result.get("key_strengths", []),
+                    "potential_concerns": result.get("potential_concerns", [])
+                }
+                
+            except json.JSONDecodeError:
+                # Si la réponse n'est pas du JSON valide, extraire le score manuellement
+                import re
+                score_match = re.search(r'"score":\s*([0-9.]+)', response)
+                if score_match:
+                    score = float(score_match.group(1))
+                    score = max(0.0, min(10.0, score))
+                    return {
+                        "score": round(score, 1),
+                        "reasoning": "Score extrait de réponse LLM non-JSON",
+                        "details": {},
+                        "conversion_probability": 0.5,
+                        "key_strengths": [],
+                        "potential_concerns": []
+                    }
+                else:
+                    raise ValueError("Impossible d'extraire le score de la réponse LLM")
             
         except Exception as e:
-            # En cas d'erreur, retourne un score par défaut
-            self.speak(f"Erreur lors de l'évaluation de l'adéquation avec LLM: {str(e)}", target="QualificationSupervisor")
-            return 5.0  # Score moyen par défaut
+            self.speak(f"Erreur lors du scoring LLM: {str(e)}", target="QualificationSupervisor")
+            raise e
+    
+    def _convert_datetime_to_string(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        CORRECTION BUG: Convertit récursivement tous les objets datetime en strings
+        pour éviter les erreurs JSON "Object of type datetime is not JSON serializable"
+        
+        Args:
+            data: Dictionnaire contenant potentiellement des objets datetime
+            
+        Returns:
+            Dictionnaire avec les datetime convertis en strings
+        """
+        if isinstance(data, dict):
+            return {k: self._convert_datetime_to_string(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._convert_datetime_to_string(item) for item in data]
+        elif isinstance(data, datetime.datetime):
+            return data.isoformat()
+        elif isinstance(data, datetime.date):
+            return data.isoformat()
+        else:
+            return data
+    
+    def _score_lead_fallback(self, lead: Dict[str, Any], niche: str) -> Dict[str, Any]:
+        """
+        Méthode de scoring de secours (simple mais adaptée TPE/PME)
+        
+        Args:
+            lead: Le lead à scorer
+            niche: La niche du lead
+            
+        Returns:
+            Lead scoré avec méthode simple
+        """
+        scored_lead = lead.copy()
+        
+        # Scoring simple mais intelligent pour TPE/PME
+        score = 5.0  # Score de base
+        reasoning_parts = []
+        
+        # Vérification des champs essentiels
+        if lead.get("email"):
+            score += 1.0
+            reasoning_parts.append("Email présent")
+        
+        if lead.get("company"):
+            score += 1.0
+            reasoning_parts.append("Entreprise identifiée")
+        
+        if lead.get("first_name") and lead.get("last_name"):
+            score += 0.5
+            reasoning_parts.append("Contact personnalisé")
+        
+        # Bonus pour TPE/PME (logique inversée par rapport à l'ancien système)
+        position = lead.get("position", "").lower()
+        if any(word in position for word in ["patron", "gérant", "directeur", "fondateur", "owner"]):
+            score += 2.0
+            reasoning_parts.append("Décideur TPE/PME")
+        elif any(word in position for word in ["manager", "responsable"]):
+            score += 1.0
+            reasoning_parts.append("Position de responsabilité")
+        
+        # Email perso acceptable pour TPE
+        email = lead.get("email", "").lower()
+        if any(domain in email for domain in ["gmail.com", "yahoo.com", "hotmail.com"]):
+            score += 0.5  # Bonus au lieu de pénalité !
+            reasoning_parts.append("Email personnel TPE (normal)")
+        elif "@" in email and "." in email:
+            score += 1.0
+            reasoning_parts.append("Email professionnel")
+        
+        # Secteur compatible
+        industry = lead.get("industry", "").lower()
+        if any(sector in industry for sector in self.target_sectors):
+            score += 1.5
+            reasoning_parts.append("Secteur cible")
+        
+        # Limitation du score à 10
+        score = min(10.0, score)
+        
+        scored_lead["score"] = round(score, 1)
+        scored_lead["score_reasoning"] = "Scoring simple: " + ", ".join(reasoning_parts)
+        scored_lead["score_details"] = {"method": "fallback", "base_score": 5.0, "adjustments": score - 5.0}
+        scored_lead["conversion_probability"] = min(0.9, score / 10.0)
+        
+        return scored_lead
     
     def update_scoring_criteria(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Met à jour les critères de scoring
+        Met à jour les paramètres de scoring
         
         Args:
-            input_data: Nouvelles valeurs pour les critères
+            input_data: Nouvelles valeurs pour les paramètres
             
         Returns:
-            Critères mis à jour
+            Paramètres mis à jour
         """
-        criteria = input_data.get("criteria", {})
+        updates = input_data.get("updates", {})
         
-        if not criteria:
+        if not updates:
             return {
                 "status": "error",
-                "message": "Aucun critère fourni",
-                "scoring_criteria": self.scoring_criteria
+                "message": "Aucune mise à jour fournie",
+                "current_config": {
+                    "llm_scoring_enabled": self.llm_scoring_enabled,
+                    "scoring_complexity": self.scoring_complexity,
+                    "quality_thresholds": self.quality_thresholds
+                }
             }
         
-        # Mise à jour des critères spécifiés
-        for key, value in criteria.items():
-            self.scoring_criteria[key] = value
-        
-        # Validation que la somme des poids est égale à 1
-        total_weight = sum(self.scoring_criteria.values())
-        if abs(total_weight - 1.0) > 0.01:  # Tolérance de 0.01
-            # Normalisation des poids
-            for key in self.scoring_criteria:
-                self.scoring_criteria[key] /= total_weight
+        # Mise à jour des paramètres
+        if "llm_scoring_enabled" in updates:
+            self.llm_scoring_enabled = updates["llm_scoring_enabled"]
+            
+        if "scoring_complexity" in updates:
+            self.scoring_complexity = updates["scoring_complexity"]
+            
+        if "quality_thresholds" in updates:
+            self.quality_thresholds.update(updates["quality_thresholds"])
+            
+        if "target_sectors" in updates:
+            self.target_sectors = updates["target_sectors"]
         
         # Sauvegarde dans la configuration
-        self.update_config("scoring_criteria", self.scoring_criteria)
+        self.update_config("llm_scoring_enabled", self.llm_scoring_enabled)
+        self.update_config("scoring_complexity", self.scoring_complexity)
+        self.update_config("quality_thresholds", self.quality_thresholds)
+        self.update_config("target_sectors", self.target_sectors)
         
-        self.speak(f"Critères de scoring mis à jour: {json.dumps(self.scoring_criteria)}", target="QualificationSupervisor")
+        self.speak(f"Configuration de scoring mise à jour", target="QualificationSupervisor")
         
         return {
             "status": "success",
-            "message": "Critères de scoring mis à jour",
-            "scoring_criteria": self.scoring_criteria
+            "message": "Configuration de scoring mise à jour",
+            "updated_config": {
+                "llm_scoring_enabled": self.llm_scoring_enabled,
+                "scoring_complexity": self.scoring_complexity,
+                "quality_thresholds": self.quality_thresholds,
+                "target_sectors": self.target_sectors
+            }
         }
     
     def get_scoring_stats(self) -> Dict[str, Any]:
@@ -344,7 +449,13 @@ class ScoringAgent(Agent):
         """
         return {
             "status": "success",
-            "stats": self.scoring_stats
+            "stats": self.scoring_stats,
+            "config": {
+                "llm_scoring_enabled": self.llm_scoring_enabled,
+                "scoring_complexity": self.scoring_complexity,
+                "quality_thresholds": self.quality_thresholds,
+                "target_sectors": self.target_sectors
+            }
         }
     
     def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -362,7 +473,7 @@ class ScoringAgent(Agent):
         if action == "score":
             return self.score_leads(input_data)
         
-        elif action == "update_criteria":
+        elif action == "update_config":
             return self.update_scoring_criteria(input_data)
         
         elif action == "get_stats":
@@ -379,38 +490,36 @@ if __name__ == "__main__":
     # Création d'une instance du ScoringAgent
     agent = ScoringAgent()
     
-    # Test de l'agent avec des données de test
+    # Test de l'agent avec des données TPE/PME
     test_leads = [
         {
             "lead_id": "1",
-            "first_name": "John",
-            "last_name": "Doe",
-            "email": "john.doe@company.com",
-            "position": "CEO",
-            "company": "Test Company",
-            "company_website": "https://www.testcompany.com",
-            "company_size": "51-200",
-            "industry": "Technology",
-            "country": "France"
+            "first_name": "Marie",
+            "last_name": "Dubois",
+            "email": "marie.dubois.coiffure@gmail.com",
+            "position": "Propriétaire",
+            "company": "Salon Marie Coiffure",
+            "company_website": "",
+            "industry": "Salon de coiffure",
+            "phone": "0123456789"
         },
         {
             "lead_id": "2",
-            "first_name": "Jane",
-            "last_name": "Smith",
-            "email": "info@anothercompany.com",
-            "position": "Marketing Manager",
-            "company": "Another Company",
-            "company_website": "https://www.anothercompany.com",
-            "company_size": "11-50",
-            "industry": "Marketing",
-            "country": "France"
+            "first_name": "Pierre",
+            "last_name": "Martin",
+            "email": "contact@garage-martin.fr",
+            "position": "Gérant",
+            "company": "Garage Martin",
+            "company_website": "https://www.garage-martin.fr",
+            "industry": "Garage automobile",
+            "phone": "0987654321"
         }
     ]
     
     result = agent.run({
         "action": "score",
         "leads": test_leads,
-        "niche": "test"
+        "niche": "TPE services locaux"
     })
     
-    print(json.dumps(result, indent=2))
+    print(json.dumps(result, indent=2, ensure_ascii=False))

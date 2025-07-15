@@ -49,6 +49,41 @@ class FollowUpAgent(Agent):
         # Chargement des règles de timing
         self.timing_rules = self.config.get("timing_rules", {})
     
+    def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Point d'entrée principal du FollowUpAgent
+        
+        Args:
+            input_data: Données d'entrée avec l'action à effectuer
+            
+        Returns:
+            Résultat de l'action demandée
+        """
+        action = input_data.get("action", "")
+        
+        if action == "send_follow_ups":
+            return self.send_follow_ups(input_data)
+        elif action == "send_custom_follow_up":
+            return self.send_custom_follow_up(input_data)
+        elif action == "get_follow_up_stats":
+            return self.get_follow_up_stats()
+        elif action == "get_sequence_for_lead":
+            return self.get_sequence_for_lead(input_data)
+        elif action == "get_stats":
+            return self.get_follow_up_stats()
+        else:
+            return {
+                "status": "error",
+                "message": f"Action non reconnue: {action}",
+                "available_actions": [
+                    "send_follow_ups",
+                    "send_custom_follow_up", 
+                    "get_follow_up_stats",
+                    "get_sequence_for_lead",
+                    "get_stats"
+                ]
+            }
+    
     def send_follow_ups(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Envoie des relances aux leads qui n'ont pas répondu

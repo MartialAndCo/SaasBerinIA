@@ -6,17 +6,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
+import DocumentsManager from "./documents-manager"
 import axios from "axios"
 
 interface MessengerDirectives {
   sms_instructions: string
   email_instructions: string
+  email_subject_instructions: string
 }
 
 export default function MessengerServicesConfig() {
   const [directives, setDirectives] = useState<MessengerDirectives>({
     sms_instructions: "",
-    email_instructions: ""
+    email_instructions: "",
+    email_subject_instructions: ""
   })
 
   useEffect(() => {
@@ -26,7 +29,8 @@ export default function MessengerServicesConfig() {
         if (response.data) {
           setDirectives({
             sms_instructions: response.data.sms_instructions || "",
-            email_instructions: response.data.email_instructions || ""
+            email_instructions: response.data.email_instructions || "",
+            email_subject_instructions: response.data.email_subject_instructions || ""
           })
         }
       } catch (error) {
@@ -61,11 +65,16 @@ export default function MessengerServicesConfig() {
 
   return (
     <div className="space-y-6">
+      {/* Documents d'Entreprise */}
+      <DocumentsManager />
+      
+      {/* Configuration des Directives */}
       <Card>
         <CardHeader>
           <CardTitle>Configuration des Directives du Messenger Agent</CardTitle>
           <CardDescription>
-            Définissez les instructions générales pour les communications SMS et Email
+            Définissez les instructions générales pour les communications SMS et Email. 
+            Le contenu des documents uploadés ci-dessus sera automatiquement ajouté.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -92,6 +101,19 @@ export default function MessengerServicesConfig() {
                 email_instructions: e.target.value
               })}
               className="min-h-[200px]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Instructions pour Objets d'Email</Label>
+            <Textarea
+              placeholder="Saisissez les instructions pour générer les objets d'emails (max 60 caractères, personnalisé, engageant...)"
+              value={directives.email_subject_instructions}
+              onChange={(e) => setDirectives({
+                ...directives,
+                email_subject_instructions: e.target.value
+              })}
+              className="min-h-[150px]"
             />
           </div>
 

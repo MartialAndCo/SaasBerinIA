@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 import { 
   Box, 
   VStack, 
+  HStack,
   Heading, 
   FormControl, 
   FormLabel, 
@@ -10,7 +12,9 @@ import {
   Textarea, 
   Select, 
   Button, 
-  useToast 
+  useToast,
+  Divider,
+  Text
 } from '@chakra-ui/react';
 
 interface MessengerDirective {
@@ -26,6 +30,7 @@ interface MessengerDirective {
 }
 
 const MessengerConfig: React.FC = () => {
+  const router = useRouter();
   const [directives, setDirectives] = useState<MessengerDirective>({
     directives: {
       channel_preference: 'both',
@@ -74,9 +79,30 @@ const MessengerConfig: React.FC = () => {
     }
   };
 
+  const handleSandboxClick = () => {
+    router.push('/dashboard/sandbox');
+  };
+
   return (
     <Box p={5}>
-      <Heading mb={6}>Configuration du Messager</Heading>
+      <HStack justifyContent="space-between" mb={6}>
+        <Heading>Configuration du Messager</Heading>
+        <Button 
+          colorScheme="orange" 
+          variant="outline"
+          onClick={handleSandboxClick}
+          size="lg"
+        >
+          🧪 Sandbox
+        </Button>
+      </HStack>
+      
+      <Box mb={4} p={3} bg="orange.50" borderRadius="md" borderLeft="4px solid" borderLeftColor="orange.400">
+        <Text fontSize="sm" color="orange.700">
+          <strong>Nouveau :</strong> Testez vos stratégies de messaging dans le Sandbox avant de les déployer sur de vrais prospects !
+        </Text>
+      </Box>
+      
       <VStack spacing={4} align="stretch">
         <FormControl>
           <FormLabel>Niche</FormLabel>

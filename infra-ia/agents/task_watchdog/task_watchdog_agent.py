@@ -236,7 +236,7 @@ class TaskWatchdogAgent(Agent):
         }
         
         # Construction du prompt complet
-        prompt = self.build_prompt(prompt_variables)
+        prompt = self._build_prompt(prompt_variables)
         
         # Appel LLM avec le modèle configuré
         model = self.config.get("analysis_model", "gpt-4.1-mini")
@@ -386,6 +386,60 @@ class TaskWatchdogAgent(Agent):
             self.logger.error(f"Erreur extraction manuelle: {e}")
         
         return None
+    
+    def _build_prompt(self, variables: Dict[str, Any]) -> str:
+        """
+        Construit le prompt d'analyse de sécurité pour le LLM
+        
+        Args:
+            variables: Variables à injecter dans le prompt
+            
+        Returns:
+            Prompt formaté pour l'analyse LLM
+        """
+        prompt_template = """
+Tu es TaskWatchdogAgent, gardien de la sécurité du système BerinIA.
+
+TÂCHE À ANALYSER :
+Agent demandeur: {requesting_agent}
+Agent cible: {target_agent}
+Action: {action}
+Exécution: {execution_time}
+Récurrente: {recurring}
+Intervalle: {recurrence_interval}
+ID tâche: {task_id}
+Contexte: {creation_context}
+
+HISTORIQUE RÉCENT :
+{recent_patterns}
+
+CRITÈRES DE SÉCURITÉ :
+1. DUPLICATION : Détecte si >5 tâches similaires récentes
+2. FRÉQUENCE : Alerte si intervalle <300 secondes (5min)
+3. MOTS-CLÉS CRITIQUES : {critical_keywords}
+4. MOTS-CLÉS SUSPECTS : {suspicious_keywords}
+5. VOLUME : Surveille création massive de tâches
+
+MISSION PRINCIPALE : BLOQUER LES DUPLICATIONS EXPONENTIELLES
+
+ANALYSE REQUISE :
+- NORMAL : Tâche légitime, pas de problème détecté
+- SUSPECT : Pattern inhabituel mais pas critique
+- CRITICAL : Duplication/spam détecté → BLOCAGE IMMÉDIAT
+
+RÉPONSE JSON OBLIGATOIRE :
+{{
+  "threat_level": "NORMAL|SUSPECT|CRITICAL",
+  "confidence": 0.XX,
+  "reason": "Explication claire et précise",
+  "recommended_action": "ALLOW|QUARANTINE|DELETE",
+  "patterns_detected": ["pattern1", "pattern2"],
+  "risk_factors": ["facteur1", "facteur2"],
+  "legitimate_reasons": ["raison1", "raison2"]
+}}
+"""
+        
+        return prompt_template.format(**variables)
     
     def create_fallback_analysis(self, reason: str) -> Dict[str, Any]:
         """Crée une analyse de fallback sécurisée"""

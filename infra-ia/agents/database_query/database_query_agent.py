@@ -56,19 +56,21 @@ class DatabaseQueryAgent(Agent):
             Résultat de l'interrogation de la base de données
         """
         # Extraction de la question/requête - prend en charge plusieurs formats d'entrée
-        question = input_data.get("message", input_data.get("question", ""))
+        question = input_data.get("message", input_data.get("question", input_data.get("query", "")))
         
         # Gestion spéciale pour les actions directes
         action = input_data.get("action", "")
         
         # Si aucune question n'est fournie mais qu'une action spécifique est reconnue
         if not question and action:
-            if action == "count_leads":
+            if action == "count_leads" or action == "leads_count":
                 question = "Combien de leads avons-nous dans la base de données?"
             elif action == "active_conversations":
                 question = "Combien de conversations actives avons-nous?"
             elif action == "conversion_rate":
                 question = "Quel est notre taux de conversion actuel?"
+            elif action == "query" and input_data.get("query"):
+                question = input_data.get("query")
 
         # Vérification qu'une question est disponible
         if not question:
@@ -448,8 +450,17 @@ class DatabaseQueryAgent(Agent):
         """
         question_lower = question.lower()
         
-        # 1. Nombre de leads
-        if re.search(r'combien\s+de?\s+leads', question_lower) or "nombre de leads" in question_lower:
+        # 🔧 CORRECTION BUG : Vérification INTELLIGENTE des conditions
+        # Ne pas utiliser les requêtes prédéfinies si des conditions spécifiques sont détectées
+        condition_keywords = [
+            "avec", "ayant", "score", "supérieur", "inférieur", "plus de", "moins de", 
+            ">", "<", "=", "entre", "où", "qui ont", "qui possèdent", "filtre", "filtré"
+        ]
+        
+        has_conditions = any(keyword in question_lower for keyword in condition_keywords)
+        
+        # 1. Nombre de leads (SEULEMENT si pas de conditions spécifiques)
+        if (re.search(r'combien\s+de?\s+leads', question_lower) or "nombre de leads" in question_lower) and not has_conditions:
             return self._count_leads()
             
         # 2. Leads récemment ajoutés
@@ -723,7 +734,7 @@ class DatabaseQueryAgent(Agent):
                 l.last_name,
                 l.company,
                 COUNT(m.id) as message_count,
-                MAX(m.timestamp) as last_message_date,
+                MAX(m.sent_date) as last_message_date,
                 SUM(CASE WHEN m.direction = 'inbound' THEN 1 ELSE 0 END) as inbound_count,
                 SUM(CASE WHEN m.direction = 'outbound' THEN 1 ELSE 0 END) as outbound_count
             FROM 
@@ -731,7 +742,7 @@ class DatabaseQueryAgent(Agent):
             JOIN 
                 messages m ON l.id = m.lead_id
             WHERE 
-                m.timestamp > :cutoff_date
+                m.sent_date > :cutoff_date
             GROUP BY 
                 l.id, l.first_name, l.last_name, l.company
             ORDER BY 
@@ -814,9 +825,7 @@ class DatabaseQueryAgent(Agent):
             FROM 
                 campaigns c
             LEFT JOIN 
-                campaign_leads cl ON c.id = cl.campaign_id
-            LEFT JOIN 
-                leads l ON cl.lead_id = l.id
+                leads l ON l.id IS NOT NULL  -- Relation directe lead-campagne via campaign_id dans leads ou messages
             LEFT JOIN 
                 messages m ON l.id = m.lead_id
             GROUP BY 

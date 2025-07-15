@@ -3,7 +3,8 @@
  */
 
 // URL de base de l'API (sans /api à la fin pour éviter le doublon)
-export const API_BASE_URL = 'http://localhost:8000';
+// Utilise une URL relative pour supporter automatiquement HTTP/HTTPS
+export const API_BASE_URL = '';
 
 // Configuration des endpoints API
 export const API_ENDPOINTS = {

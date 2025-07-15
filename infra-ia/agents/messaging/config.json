@@ -3,12 +3,36 @@
   "description": "Agent responsable de l'envoi des messages aux leads",
   "daily_limit": 100,
   "batch_size": 20,
-  "time_between_batches": 60,
-  "test_mode": true,
+  "time_between_batches": 2,
+  "test_mode": false,
   "email": {
-    "service": "instantly",
-    "from_email": "contact@berinia.com",
-    "instantly_api_key": ""
+    "service": "mailcheap_smtp",
+    "smtp_accounts": [
+      {
+        "host": "MAILCHEAP_SMTP_HOST_1",
+        "port": 587,
+        "user": "MAILCHEAP_SMTP_USER_1",
+        "password": "MAILCHEAP_SMTP_PASSWORD_1",
+        "from_email": "MAILCHEAP_SMTP_USER_1",
+        "status": "active"
+      },
+      {
+        "host": "MAILCHEAP_SMTP_HOST_2",
+        "port": 587,
+        "user": "MAILCHEAP_SMTP_USER_2", 
+        "password": "MAILCHEAP_SMTP_PASSWORD_2",
+        "from_email": "MAILCHEAP_SMTP_USER_2",
+        "status": "active"
+      },
+      {
+        "host": "MAILCHEAP_SMTP_HOST_3",
+        "port": 587,
+        "user": "MAILCHEAP_SMTP_USER_3",
+        "password": "MAILCHEAP_SMTP_PASSWORD_3", 
+        "from_email": "MAILCHEAP_SMTP_USER_3",
+        "status": "active"
+      }
+    ]
   },
   "sms": {
     "service": "twilio",

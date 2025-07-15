@@ -261,3 +261,110 @@ Les logs des services systemd sont gérés par journald et peuvent être consult
 - L'API BerinIA (`/api/services/{service_name}/logs`)
 
 Pour une rotation appropriée des logs, assurez-vous que journald est configuré correctement.
+
+## Gestion des logs système
+
+### Configuration automatique de la rotation des logs
+
+Le système BerinIA dispose d'une configuration automatique de rotation des logs pour éviter l'accumulation excessive d'entrées de logs.
+
+#### Configuration journald
+
+La configuration se trouve dans `/etc/systemd/journald.conf.d/berinia.conf` :
+
+```ini
+[Journal]
+# Limitation de la rétention des logs à 1 semaine
+MaxRetentionSec=1week
+
+# Limitation de l'espace disque utilisé par les logs (1Go max)
+SystemMaxUse=1G
+
+# Limitation du nombre de fichiers de logs
+SystemMaxFiles=50
+
+# Taille maximale par fichier de log (128Mo)
+SystemMaxFileSize=128M
+
+# Compression des logs anciens
+Compress=yes
+```
+
+#### Script de nettoyage automatique
+
+Un script de nettoyage automatique est configuré : `/root/berinia/infra-ia/utils/cleanup_logs.sh`
+
+Ce script :
+- Nettoie les logs journald plus anciens que 7 jours
+- Supprime les logs applicatifs anciens des dossiers `/root/berinia/logs` et `/root/berinia/infra-ia/logs`
+- **Nettoie les logs de la base de données PostgreSQL** (tables `system_logs`, `agent_logs`, `logs`)
+- Génère un rapport dans `/var/log/berinia-cleanup.log`
+
+Le script s'exécute automatiquement chaque jour à 2h du matin via cron.
+
+#### Nettoyage de la base de données
+
+Un script spécialisé gère le nettoyage des logs stockés en base de données : `/root/berinia/backend/cleanup_database_logs.py`
+
+Ce script :
+- Supprime les logs de plus de 7 jours dans les tables `system_logs`, `agent_logs`, et `logs`
+- Optimise les tables après suppression (VACUUM ANALYZE)
+- Génère un rapport détaillé dans `/var/log/berinia-db-cleanup.log`
+
+**Tables de logs nettoyées :**
+- `system_logs` : Logs système des agents et composants
+- `agent_logs` : Logs spécifiques aux agents IA
+- `logs` : Logs généraux de l'application
+
+#### Optimisation intelligente des logs
+
+Un script d'optimisation avancée : `/root/berinia/backend/optimize_logs.py`
+
+Ce script effectue un nettoyage intelligent :
+- **Reclassification automatique** : Les erreurs marquées incorrectement comme "INFO" sont reclassifiées en "ERROR"
+- **Suppression du spam** : Supprime les messages répétitifs de configuration (garde 1 occurrence/jour)
+- **Nettoyage agressif** : 
+  - Logs INFO : rétention réduite à 3 jours (au lieu de 7)
+  - Logs ERROR : rétention de 2 semaines
+  - Suppression des messages verbeux en excès
+- **Suppression des doublons** : Élimine les doublons exacts par minute
+- Génère un rapport dans `/var/log/berinia-logs-optimization.log`
+
+**Exemples de messages spam automatiquement supprimés :**
+- "Configuration de personnalité chargée"
+- "Configuration globale chargée" 
+- "Client Instantly.ai initialisé"
+- Messages de configuration répétitifs
+
+**Résultat typique :** Réduction de 90-95% du volume de logs tout en conservant les informations importantes.
+
+#### Commandes de maintenance manuelle
+
+```bash
+# Nettoyage manuel des logs de plus de 7 jours
+sudo journalctl --vacuum-time=7d
+
+# Vérification de l'espace utilisé par les logs
+journalctl --disk-usage
+
+# Exécution manuelle du script de nettoyage
+/root/berinia/infra-ia/utils/cleanup_logs.sh
+
+# Vérification du rapport de nettoyage
+cat /var/log/berinia-cleanup.log
+```
+
+#### Surveillance des logs
+
+Pour surveiller l'accumulation des logs :
+
+```bash
+# Vérifier l'espace disque total utilisé par les logs
+journalctl --disk-usage
+
+# Compter le nombre d'entrées de logs pour un service
+journalctl -u postgresql.service --no-pager | wc -l
+
+# Voir les logs récents d'un service spécifique
+journalctl -u berinia-api.service -n 50 --no-pager
+```

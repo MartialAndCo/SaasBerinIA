@@ -73,8 +73,8 @@ class AgentRegistry:
         Returns:
             L'instance d'agent ou None en cas d'erreur
         """
-        # Vérifier si l'agent existe déjà
-        agent = self.get(name)
+        # Vérifier si l'agent existe déjà (sans générer de warning)
+        agent = self._agents.get(name)
         if agent:
             return agent
         

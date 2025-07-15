@@ -88,26 +88,10 @@ class QualificationSupervisor(Agent):
         
         self.speak(f"{len(duplicates)} doublons identifiés sur {len(leads)} leads", target="OverseerAgent")
         
-        # Étape 2: Validation des leads par le ValidatorAgent
-        validation_result = overseer.execute_agent("ValidatorAgent", {
-            "leads": unique_leads,
-            "niche": niche,
-            "criteria": self.qualification_criteria
-        })
-        
-        if validation_result.get("status") != "success":
-            self.speak(f"Erreur lors de la validation des leads: {validation_result.get('message')}", target="OverseerAgent")
-            return validation_result
-        
-        # Récupération des leads valides et invalides
-        valid_leads = validation_result.get("valid_leads", [])
-        invalid_leads = validation_result.get("invalid_leads", [])
-        
-        self.speak(f"{len(valid_leads)} leads valides et {len(invalid_leads)} invalides identifiés", target="OverseerAgent")
-        
-        # Étape 3: Attribution d'un score aux leads valides par le ScoringAgent
+        # Étape 2: Attribution d'un score aux leads uniques par le ScoringAgent (ValidationAgent supprimé)
+        # La validation est maintenant intégrée dans le ScoringAgent intelligent
         scoring_result = overseer.execute_agent("ScoringAgent", {
-            "leads": valid_leads,
+            "leads": unique_leads,
             "niche": niche
         })
         
@@ -118,29 +102,32 @@ class QualificationSupervisor(Agent):
         # Récupération des leads avec score
         scored_leads = scoring_result.get("leads", [])
         
-        # Étape 4: Filtrage final selon les critères de qualification
+        # Étape 3: Filtrage final selon les critères de qualification TPE/PME
         qualified_leads = []
         rejected_leads = []
+        
+        # Critères TPE/PME adaptés (score minimum réduit)
+        min_score_tpe = self.qualification_criteria.get("min_score", 3.0)  # Réduit pour TPE/PME
         
         for lead in scored_leads:
             score = lead.get("score", 0)
             
-            if score >= self.qualification_criteria.get("min_score", 5.0):
+            if score >= min_score_tpe:
                 qualified_leads.append(lead)
             else:
                 rejected_leads.append({
                     "lead": lead,
-                    "reason": f"Score insuffisant: {score}"
+                    "reason": f"Score insuffisant: {score} (minimum TPE/PME: {min_score_tpe})"
                 })
         
         # Mise à jour des statistiques
         self.qualification_stats["total_processed"] += len(leads)
         self.qualification_stats["qualified"] += len(qualified_leads)
-        self.qualification_stats["rejected"] += len(rejected_leads) + len(invalid_leads)
+        self.qualification_stats["rejected"] += len(rejected_leads)
         
         # Log des résultats
         self.speak(
-            f"Qualification terminée: {len(qualified_leads)} qualifiés, {len(rejected_leads)} rejetés, {len(invalid_leads)} invalides, {len(duplicates)} doublons",
+            f"Qualification TPE/PME terminée: {len(qualified_leads)} qualifiés, {len(rejected_leads)} rejetés, {len(duplicates)} doublons",
             target="OverseerAgent"
         )
         
@@ -148,13 +135,12 @@ class QualificationSupervisor(Agent):
             "status": "success",
             "niche": niche,
             "qualified_leads": qualified_leads,
-            "rejected_leads": rejected_leads + invalid_leads,
+            "rejected_leads": rejected_leads,
             "duplicates": duplicates,
             "stats": {
                 "total": len(leads),
                 "qualified": len(qualified_leads),
                 "rejected": len(rejected_leads),
-                "invalid": len(invalid_leads),
                 "duplicates": len(duplicates)
             }
         }

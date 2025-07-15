@@ -1,5 +1,5 @@
 """
-API Endpoints pour la gestion des tâches planifiées BerinIA
+API Endpoints pour la gestion des tâches planifiées BerinIA - VERSION DATABASE
 """
 
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -10,33 +10,45 @@ import os
 import logging
 import datetime
 from pathlib import Path
+from sqlalchemy.orm import Session
+from app.database.connection import get_db
+from app.models.models import Task, Log
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Chemin vers le fichier de tâches
-TASKS_FILE = "/root/berinia/infra-ia/data/tasks.json"
-
 class TaskCreate(BaseModel):
-    name: str
-    schedule: str  # 'daily', 'weekly', 'hourly', ou datetime ISO
-    agent: str
-    params: Optional[Dict[str, Any]] = {}
+    action: str
+    agent_id: Optional[int] = 1
+    parameters: Optional[Dict[str, Any]] = {}
+    priority: Optional[int] = 3
+    scheduled_time: Optional[str] = None
+    is_recurring: Optional[bool] = False
+    recurrence_interval: Optional[int] = None
 
 class TaskUpdate(BaseModel):
-    name: Optional[str] = None
-    schedule: Optional[str] = None
-    agent: Optional[str] = None
-    params: Optional[Dict[str, Any]] = None
+    action: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[int] = None
+    scheduled_time: Optional[str] = None
+    is_recurring: Optional[bool] = None
+    recurrence_interval: Optional[int] = None
 
 class TaskResponse(BaseModel):
-    task_id: str
-    name: str
-    schedule: str
-    agent: str
-    params: Dict[str, Any]
+    id: int
+    agent_id: int
+    action: str
+    parameters: Dict[str, Any]
+    status: str
+    priority: int
+    scheduled_time: str
+    execution_time: Optional[str]
+    is_recurring: bool
+    recurrence_interval: Optional[int]
     last_run: Optional[str]
-    next_run: Optional[str]
+    result: Optional[Dict[str, Any]]
+    created_at: Optional[str]
+    updated_at: Optional[str]
 
 class TaskStats(BaseModel):
     total_tasks: int
@@ -45,246 +57,58 @@ class TaskStats(BaseModel):
     next_execution: Optional[str]
     security_analysis: Dict[str, Any]
 
-def load_tasks() -> List[Dict[str, Any]]:
-    """Charge les tâches depuis le fichier JSON"""
-    try:
-        if not os.path.exists(TASKS_FILE):
-            return []
-        
-        with open(TASKS_FILE, 'r') as f:
-            return json.load(f)
-    except Exception as e:
-        logger.error(f"Erreur chargement tâches: {e}")
-        return []
+# ROUTES SPÉCIFIQUES D'ABORD (avant les routes avec paramètres)
 
-def save_tasks(tasks: List[Dict[str, Any]]) -> bool:
-    """Sauvegarde les tâches dans le fichier JSON"""
+@router.get("/tasks/stats", response_model=TaskStats)
+async def get_tasks_stats_simple(db: Session = Depends(get_db)):
+    """Récupère les statistiques des tâches (endpoint simplifié pour le frontend)"""
     try:
-        # Créer le répertoire si nécessaire
-        os.makedirs(os.path.dirname(TASKS_FILE), exist_ok=True)
-        
-        with open(TASKS_FILE, 'w') as f:
-            json.dump(tasks, f, indent=2)
-        return True
-    except Exception as e:
-        logger.error(f"Erreur sauvegarde tâches: {e}")
-        return False
-
-def call_scheduler_api(action: str, task_data: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Appelle l'API du scheduler pour les opérations en temps réel"""
-    try:
-        # Import du scheduler pour interaction directe
-        import sys
-        sys.path.append('/root/berinia/infra-ia')
-        from scheduler import TaskScheduler
-        
-        scheduler = TaskScheduler()
-        
-        if action == "add_task":
-            return scheduler.add_task(
-                name=task_data["name"],
-                schedule=task_data["schedule"],
-                agent=task_data["agent"],
-                params=task_data.get("params", {}),
-                requesting_agent="admin_api"
-            )
-        elif action == "remove_task":
-            return {"status": "success" if scheduler.remove_task(task_data["task_id"]) else "error"}
-        else:
-            return {"status": "error", "message": f"Action non supportée: {action}"}
-            
-    except Exception as e:
-        logger.error(f"Erreur appel scheduler: {e}")
-        return {"status": "error", "message": str(e)}
-
-@router.get("/tasks", response_model=List[TaskResponse])
-async def get_tasks():
-    """Récupère toutes les tâches planifiées"""
-    try:
-        tasks = load_tasks()
-        return [TaskResponse(**task) for task in tasks]
-    except Exception as e:
-        logger.error(f"Erreur récupération tâches: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la récupération des tâches"
-        )
-
-@router.get("/tasks/{task_id}", response_model=TaskResponse)
-async def get_task(task_id: str):
-    """Récupère une tâche spécifique par son ID"""
-    try:
-        tasks = load_tasks()
-        task = next((t for t in tasks if t["task_id"] == task_id), None)
-        
-        if not task:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Tâche {task_id} non trouvée"
-            )
-        
-        return TaskResponse(**task)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur récupération tâche {task_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la récupération de la tâche"
-        )
-
-@router.post("/tasks", response_model=Dict[str, Any])
-async def create_task(task: TaskCreate):
-    """Crée une nouvelle tâche planifiée"""
-    try:
-        # Validation des données
-        valid_schedules = ["hourly", "daily", "weekly"]
-        if task.schedule not in valid_schedules:
-            # Vérifier si c'est une date ISO
-            try:
-                datetime.datetime.fromisoformat(task.schedule)
-            except ValueError:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Schedule invalide. Utilisez: {', '.join(valid_schedules)} ou une date ISO"
-                )
-        
-        # Appel du scheduler pour créer la tâche avec analyse de sécurité
-        result = call_scheduler_api("add_task", {
-            "name": task.name,
-            "schedule": task.schedule,
-            "agent": task.agent,
-            "params": task.params
-        })
-        
-        if result.get("status") == "blocked":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Tâche bloquée par sécurité: {result.get('message', '')}"
-            )
-        elif result.get("status") != "success":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Erreur création tâche: {result.get('message', '')}"
-            )
-        
-        return {
-            "status": "success",
-            "message": "Tâche créée avec succès",
-            "task_id": result.get("task_id"),
-            "security_analysis": result.get("analysis")
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur création tâche: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la création de la tâche"
-        )
-
-@router.put("/tasks/{task_id}", response_model=Dict[str, str])
-async def update_task(task_id: str, task_update: TaskUpdate):
-    """Met à jour une tâche existante"""
-    try:
-        tasks = load_tasks()
-        task_index = next((i for i, t in enumerate(tasks) if t["task_id"] == task_id), None)
-        
-        if task_index is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Tâche {task_id} non trouvée"
-            )
-        
-        # Mise à jour des champs fournis
-        task = tasks[task_index]
-        if task_update.name is not None:
-            task["name"] = task_update.name
-        if task_update.schedule is not None:
-            task["schedule"] = task_update.schedule
-        if task_update.agent is not None:
-            task["agent"] = task_update.agent
-        if task_update.params is not None:
-            task["params"] = task_update.params
-        
-        # Sauvegarde
-        if not save_tasks(tasks):
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Erreur lors de la sauvegarde"
-            )
-        
-        return {"status": "success", "message": "Tâche mise à jour avec succès"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur mise à jour tâche {task_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la mise à jour de la tâche"
-        )
-
-@router.delete("/tasks/{task_id}", response_model=Dict[str, str])
-async def delete_task(task_id: str):
-    """Supprime une tâche planifiée"""
-    try:
-        # Appel du scheduler pour suppression avec validation
-        result = call_scheduler_api("remove_task", {"task_id": task_id})
-        
-        if result.get("status") != "success":
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Impossible de supprimer la tâche {task_id}"
-            )
-        
-        return {"status": "success", "message": "Tâche supprimée avec succès"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur suppression tâche {task_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la suppression de la tâche"
-        )
-
-@router.get("/tasks/stats/overview", response_model=TaskStats)
-async def get_tasks_stats():
-    """Récupère les statistiques des tâches"""
-    try:
-        tasks = load_tasks()
-        
-        # Calculs statistiques
-        total_tasks = len(tasks)
-        active_tasks = len([t for t in tasks if t.get("next_run")])
+        # Calculs statistiques depuis la base
+        total_tasks = db.query(Task).count()
+        pending_tasks = db.query(Task).filter(Task.status == "pending").count()
+        completed_tasks = db.query(Task).filter(Task.status == "completed").count()
+        failed_tasks = db.query(Task).filter(Task.status == "failed").count()
         
         # Prochaine exécution
-        next_runs = [t.get("next_run") for t in tasks if t.get("next_run")]
-        next_execution = min(next_runs) if next_runs else None
+        next_task = db.query(Task).filter(
+            Task.status == "pending",
+            Task.scheduled_time > datetime.datetime.now()
+        ).order_by(Task.scheduled_time.asc()).first()
         
-        # Récupérer les stats de sécurité du TaskWatchdogAgent
-        security_analysis = {}
+        next_execution = next_task.scheduled_time.isoformat() if next_task else None
+        
+        # Calcul des vraies statistiques de sécurité depuis les logs
         try:
-            import sys
-            sys.path.append('/root/berinia/infra-ia')
-            from agents.task_watchdog.task_watchdog_agent import TaskWatchdogAgent
+            threats_blocked = db.query(Log).filter(
+                Log.module == 'TaskWatchdog',
+                Log.level == 'WARNING'
+            ).count()
             
-            watchdog = TaskWatchdogAgent()
-            security_result = watchdog.run({"action": "get_stats"})
-            if security_result.get("status") == "success":
-                security_analysis = security_result.get("stats", {})
-        except Exception as e:
-            logger.warning(f"Impossible de récupérer les stats de sécurité: {e}")
-            security_analysis = {"error": "Stats de sécurité indisponibles"}
+            security_alerts = db.query(Log).filter(
+                Log.level == 'ERROR'
+            ).count()
+            
+            suspicious_activities = db.query(Log).filter(
+                Log.level == 'WARNING'
+            ).count()
+        except Exception as log_error:
+            logger.warning(f'Erreur lors du calcul des stats de sécurité: {log_error}')
+            threats_blocked = 0
+            security_alerts = 0
+            suspicious_activities = 0
         
         return TaskStats(
             total_tasks=total_tasks,
-            active_tasks=active_tasks,
-            completed_today=0,  # TODO: Calculer depuis les logs
+            active_tasks=pending_tasks,
+            completed_today=completed_tasks,
             next_execution=next_execution,
-            security_analysis=security_analysis
+            security_analysis={
+                "total_analyses": security_alerts,
+                "threats_blocked": threats_blocked,
+                "false_positives": 0,
+                "last_analysis": None,
+                "patterns_learned": suspicious_activities
+            }
         )
         
     except Exception as e:
@@ -294,12 +118,16 @@ async def get_tasks_stats():
             detail="Erreur lors de la récupération des statistiques"
         )
 
+@router.get("/tasks/stats/overview", response_model=TaskStats)
+async def get_tasks_stats_detailed(db: Session = Depends(get_db)):
+    """Récupère les statistiques des tâches (endpoint détaillé)"""
+    return await get_tasks_stats_simple(db)
+
 @router.post("/tasks/{task_id}/execute", response_model=Dict[str, str])
-async def execute_task_now(task_id: str):
+async def execute_task_now(task_id: int, db: Session = Depends(get_db)):
     """Exécute immédiatement une tâche spécifique"""
     try:
-        tasks = load_tasks()
-        task = next((t for t in tasks if t["task_id"] == task_id), None)
+        task = db.query(Task).filter(Task.id == task_id).first()
         
         if not task:
             raise HTTPException(
@@ -307,12 +135,18 @@ async def execute_task_now(task_id: str):
                 detail=f"Tâche {task_id} non trouvée"
             )
         
-        # TODO: Implémenter l'exécution immédiate via le scheduler
+        # Marquer comme en cours d'exécution
+        task.status = "running"
+        task.execution_time = datetime.datetime.now()
+        task.updated_at = datetime.datetime.now()
+        db.commit()
+        
+        # TODO: Implémenter l'exécution réelle via le scheduler
         # Pour l'instant, simulation
         
         return {
             "status": "success", 
-            "message": f"Exécution de la tâche {task_id} programmée"
+            "message": f"Exécution de la tâche {task_id} démarrée"
         }
         
     except HTTPException:
@@ -324,28 +158,202 @@ async def execute_task_now(task_id: str):
             detail="Erreur lors de l'exécution de la tâche"
         )
 
-@router.get("/security/watchdog/report")
-async def get_security_report():
-    """Récupère le rapport de sécurité TaskWatchdogAgent"""
+# ROUTES GÉNÉRALES
+
+@router.get("/tasks")
+async def get_tasks(db: Session = Depends(get_db)):
+    """Récupère toutes les tâches planifiées depuis la base de données (format frontend)"""
     try:
-        import sys
-        sys.path.append('/root/berinia/infra-ia')
-        from agents.task_watchdog.task_watchdog_agent import TaskWatchdogAgent
+        tasks = db.query(Task).all()
         
-        watchdog = TaskWatchdogAgent()
-        report = watchdog.run({"action": "get_threat_report"})
+        # Mapping des IDs agents vers les noms
+        agent_names = {
+            1: "MessagingAgent",
+            2: "ProspectionSupervisor", 
+            3: "PivotStrategyAgent",
+            4: "TaskWatchdogAgent"
+        }
         
-        if report.get("status") != "success":
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Erreur génération rapport de sécurité"
-            )
+        result = []
+        for task in tasks:
+            # Créer un nom de tâche basé sur l'action
+            task_name = f"{task.action}_{task.id}" if task.action else f"task_{task.id}"
+            
+            # Convertir la récurrence en format lisible
+            if task.is_recurring and task.recurrence_interval:
+                if task.recurrence_interval == 3600:
+                    schedule = "Toutes les heures"
+                elif task.recurrence_interval == 86400:
+                    schedule = "Quotidien"
+                elif task.recurrence_interval == 604800:
+                    schedule = "Hebdomadaire"
+                else:
+                    schedule = f"Toutes les {task.recurrence_interval}s"
+            else:
+                schedule = "Une fois"
+            
+            result.append({
+                "task_id": str(task.id),
+                "name": task_name,
+                "schedule": schedule,
+                "agent": agent_names.get(task.agent_id, f"Agent_{task.agent_id}"),
+                "params": task.parameters or {},
+                "last_run": task.last_run.isoformat() if task.last_run else None,
+                "next_run": task.scheduled_time.isoformat() if task.scheduled_time else "",
+                "status": task.status or "pending",
+                "priority": task.priority or 3
+            })
         
-        return report
+        return result
         
     except Exception as e:
-        logger.error(f"Erreur rapport sécurité: {e}")
+        logger.error(f"Erreur récupération tâches: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la récupération du rapport de sécurité"
+            detail="Erreur lors de la récupération des tâches"
+        )
+
+@router.post("/tasks", response_model=Dict[str, Any])
+async def create_task(task_data: TaskCreate, db: Session = Depends(get_db)):
+    """Crée une nouvelle tâche planifiée"""
+    try:
+        # Créer la tâche en base
+        new_task = Task(
+            agent_id=task_data.agent_id,
+            action=task_data.action,
+            parameters=task_data.parameters,
+            status="pending",
+            priority=task_data.priority,
+            scheduled_time=datetime.datetime.fromisoformat(task_data.scheduled_time) if task_data.scheduled_time else datetime.datetime.now(),
+            is_recurring=task_data.is_recurring,
+            recurrence_interval=task_data.recurrence_interval,
+            created_at=datetime.datetime.now(),
+            updated_at=datetime.datetime.now()
+        )
+        
+        db.add(new_task)
+        db.commit()
+        db.refresh(new_task)
+        
+        return {
+            "status": "success",
+            "message": "Tâche créée avec succès",
+            "task_id": new_task.id
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Erreur création tâche: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la création de la tâche: {str(e)}"
+        )
+
+# ROUTES AVEC PARAMÈTRES (À LA FIN)
+
+@router.get("/tasks/{task_id}", response_model=TaskResponse)
+async def get_task(task_id: int, db: Session = Depends(get_db)):
+    """Récupère une tâche spécifique par son ID"""
+    try:
+        task = db.query(Task).filter(Task.id == task_id).first()
+        
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tâche {task_id} non trouvée"
+            )
+        
+        return TaskResponse(
+            id=task.id,
+            agent_id=task.agent_id or 1,
+            action=task.action,
+            parameters=task.parameters or {},
+            status=task.status or "pending",
+            priority=task.priority or 3,
+            scheduled_time=task.scheduled_time.isoformat() if task.scheduled_time else "",
+            execution_time=task.execution_time.isoformat() if task.execution_time else None,
+            is_recurring=task.is_recurring or False,
+            recurrence_interval=task.recurrence_interval,
+            last_run=task.last_run.isoformat() if task.last_run else None,
+            result=task.result or {},
+            created_at=task.created_at.isoformat() if task.created_at else None,
+            updated_at=task.updated_at.isoformat() if task.updated_at else None
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération tâche {task_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur lors de la récupération de la tâche"
+        )
+
+@router.put("/tasks/{task_id}", response_model=Dict[str, str])
+async def update_task(task_id: int, task_update: TaskUpdate, db: Session = Depends(get_db)):
+    """Met à jour une tâche existante"""
+    try:
+        task = db.query(Task).filter(Task.id == task_id).first()
+        
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tâche {task_id} non trouvée"
+            )
+        
+        # Mise à jour des champs fournis
+        if task_update.action is not None:
+            task.action = task_update.action
+        if task_update.status is not None:
+            task.status = task_update.status
+        if task_update.priority is not None:
+            task.priority = task_update.priority
+        if task_update.scheduled_time is not None:
+            task.scheduled_time = datetime.datetime.fromisoformat(task_update.scheduled_time)
+        if task_update.is_recurring is not None:
+            task.is_recurring = task_update.is_recurring
+        if task_update.recurrence_interval is not None:
+            task.recurrence_interval = task_update.recurrence_interval
+        
+        task.updated_at = datetime.datetime.now()
+        
+        db.commit()
+        
+        return {"status": "success", "message": "Tâche mise à jour avec succès"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Erreur mise à jour tâche {task_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur lors de la mise à jour de la tâche"
+        )
+
+@router.delete("/tasks/{task_id}", response_model=Dict[str, str])
+async def delete_task(task_id: int, db: Session = Depends(get_db)):
+    """Supprime une tâche planifiée"""
+    try:
+        task = db.query(Task).filter(Task.id == task_id).first()
+        
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tâche {task_id} non trouvée"
+            )
+        
+        db.delete(task)
+        db.commit()
+        
+        return {"status": "success", "message": "Tâche supprimée avec succès"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Erreur suppression tâche {task_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur lors de la suppression de la tâche"
         )

@@ -42,6 +42,16 @@ class Lead(Base):
     website_maturity = Column(String, nullable=True)
     design_strengths = Column(ARRAY(String), nullable=True)
     design_weaknesses = Column(ARRAY(String), nullable=True)
+    
+    # Champs de facturation
+    billing_address = Column(Text, nullable=True)
+    billing_city = Column(String(255), nullable=True)
+    billing_postal_code = Column(String(20), nullable=True)
+    billing_country = Column(String(100), nullable=True)
+    vat_number = Column(String(50), nullable=True)
+    billing_email = Column(String(255), nullable=True)
+    billing_contact_name = Column(String(255), nullable=True)
+    stripe_customer_id = Column(String(255), nullable=True)
 
     # Propriétés calculées pour compatibilité frontend
     @property
@@ -64,3 +74,4 @@ class Lead(Base):
     campagne_id = Column(Integer, ForeignKey("campaigns.id"), nullable=True)
     # campaign = relationship("Campaign", back_populates="leads")
     # messages = relationship("Message", back_populates="lead")
+    meetings = relationship("Meeting", back_populates="lead")

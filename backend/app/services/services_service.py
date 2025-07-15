@@ -11,24 +11,22 @@ class ServicesService:
     
     # Liste des services gérés
     MANAGED_SERVICES = [
-        "berinia.service",
+        "berinia-api.service",
         "berinia-next.service",
         "berinia-webhook.service",
-        "berinia-whatsapp.service",
         "berinia-qdrant.service",
         "berinia-agents.service",
-        "berinia-scheduler.service"
+        "berinia-telegram-bot.service"
     ]
     
     # Descriptions des services
     SERVICE_DESCRIPTIONS = {
-        "berinia.service": "API backend principale",
+        "berinia-api.service": "API backend principale",
         "berinia-next.service": "Frontend Next.js",
         "berinia-webhook.service": "Serveur webhook pour réception d'événements externes",
-        "berinia-whatsapp.service": "Intégration WhatsApp",
         "berinia-qdrant.service": "Base de données vectorielle Qdrant",
-        "berinia-agents.service": "Environnement d'exécution des agents IA",
-        "berinia-scheduler.service": "Planificateur de tâches"
+        "berinia-agents.service": "Environnement d'exécution des agents IA (inclut AgentSchedulerAgent)",
+        "berinia-telegram-bot.service": "Bot Telegram BerinIA"
     }
     
     def __init__(self, db: Session = None):
@@ -55,6 +53,7 @@ class ServicesService:
             )
             status = status_cmd.stdout.strip()
             is_active = status == 'active'
+            is_failing = status == 'activating'
             
             # Vérifier si le service est activé au démarrage
             enabled_cmd = subprocess.run(
@@ -88,6 +87,7 @@ class ServicesService:
                 'status': status,
                 'is_active': is_active,
                 'is_enabled': is_enabled,
+                'is_failing': is_failing,
                 'uptime': uptime
             }
         except Exception as e:

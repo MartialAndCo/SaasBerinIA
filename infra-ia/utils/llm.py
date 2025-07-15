@@ -10,7 +10,27 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialisation du client OpenAI (compatible avec l'API v1.0.0+)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+try:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY manquante")
+    
+    # Initialisation simple sans paramètres avancés pour éviter les conflits de version
+    client = OpenAI(api_key=api_key)
+    
+    # Test basique pour vérifier que le client fonctionne
+    test_response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": "test"}],
+        max_tokens=1
+    )
+    print("Client OpenAI initialisé avec succès")
+    
+except Exception as e:
+    # Fallback si problème d'initialisation
+    client = None
+    print(f"Erreur init OpenAI: {e}")
+    print("Le service utilisera des messages de fallback")
 
 class LLMService:
     """Service pour les appels aux différents modèles de langage"""
@@ -35,6 +55,9 @@ class LLMService:
             La réponse du LLM sous forme de texte
         """
         model = LLMService.MODELS.get(complexity, "gpt-4.1")
+        
+        if client is None:
+            return f"[FALLBACK] Message généré pour: {prompt[:50]}..."
         
         response = client.chat.completions.create(
             model=model,

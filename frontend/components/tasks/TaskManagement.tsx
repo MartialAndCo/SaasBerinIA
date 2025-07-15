@@ -92,7 +92,7 @@ export default function TaskManagement() {
       const response = await fetch('/api/tasks')
       if (!response.ok) {
         // Fallback vers l'API backend directe
-        const backendResponse = await fetch('http://localhost:8000/api/tasks')
+        const backendResponse = await fetch('/api/tasks')
         if (backendResponse.ok) {
           const data = await backendResponse.json()
           setTasks(data)
@@ -117,7 +117,7 @@ export default function TaskManagement() {
       const response = await fetch('/api/tasks/stats')
       if (!response.ok) {
         // Fallback vers l'API backend directe
-        const backendResponse = await fetch('http://localhost:8000/api/tasks/stats/overview')
+        const backendResponse = await fetch('/api/tasks/stats/overview')
         if (backendResponse.ok) {
           const data = await backendResponse.json()
           setStats(data)
@@ -187,7 +187,7 @@ export default function TaskManagement() {
         }
       }
 
-      const response = await fetch('http://localhost:8000/api/tasks', {
+      const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskData)
@@ -227,7 +227,7 @@ export default function TaskManagement() {
   // Suppression de tâche
   const deleteTask = async (taskId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/tasks/${taskId}`, {
+      const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE'
       })
 
@@ -257,7 +257,7 @@ export default function TaskManagement() {
   // Exécution manuelle de tâche
   const executeTask = async (taskId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/tasks/${taskId}/execute`, {
+      const response = await fetch(`/api/tasks/${taskId}/execute`, {
         method: 'POST'
       })
 

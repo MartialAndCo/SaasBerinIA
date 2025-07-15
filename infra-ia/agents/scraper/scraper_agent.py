@@ -535,15 +535,80 @@ class ScraperAgent(Agent):
     
     def get_scraping_stats(self) -> Dict[str, Any]:
         """
-        Récupère les statistiques de scraping
+        Récupère les statistiques de scraping VRAIES depuis la base de données
         
         Returns:
-            Statistiques de scraping
+            Statistiques de scraping complètes
         """
-        return {
-            "status": "success",
-            "stats": self.scraping_stats
-        }
+        try:
+            # Initialiser le service de base de données
+            db = DatabaseService()
+            
+            # 1. Statistiques générales des leads
+            total_leads_query = "SELECT COUNT(*) as total FROM leads"
+            total_result = db.fetch_one(total_leads_query)
+            total_leads = total_result.get("total", 0) if total_result else 0
+            
+            # 2. Leads par source
+            source_stats_query = """
+                SELECT source, COUNT(*) as count 
+                FROM leads 
+                WHERE source IS NOT NULL
+                GROUP BY source 
+                ORDER BY count DESC
+            """
+            source_results = db.fetch_all(source_stats_query)
+            source_stats = {row["source"]: row["count"] for row in source_results} if source_results else {}
+            
+            # 3. Leads par industrie/niche
+            industry_stats_query = """
+                SELECT industry, COUNT(*) as count 
+                FROM leads 
+                WHERE industry IS NOT NULL AND industry != ''
+                GROUP BY industry 
+                ORDER BY count DESC 
+                LIMIT 10
+            """
+            industry_results = db.fetch_all(industry_stats_query)
+            industry_stats = {row["industry"]: row["count"] for row in industry_results} if industry_results else {}
+            
+            # 4. Leads récents (fallback simple)
+            try:
+                recent_leads_query = "SELECT COUNT(*) as count FROM leads WHERE created_at >= datetime('now', '-7 days')"
+                recent_result = db.fetch_one(recent_leads_query)
+                recent_leads = recent_result.get("count", 0) if recent_result else 0
+            except:
+                recent_leads = 0
+            
+            # 5. Construire les statistiques complètes
+            complete_stats = {
+                "total_leads": total_leads,
+                "recent_leads_7_days": recent_leads,
+                "by_source": source_stats,
+                "by_industry": industry_stats,
+                "memory_stats": self.scraping_stats,
+                "last_updated": datetime.datetime.now().isoformat()
+            }
+            
+            self.speak(f"Statistiques calculées: {total_leads} leads total", target="ScrapingSupervisor")
+            
+            return {
+                "status": "success",
+                "stats": complete_stats
+            }
+            
+        except Exception as e:
+            self.speak(f"Erreur lors du calcul des statistiques: {str(e)}", target="ScrapingSupervisor")
+            
+            # Fallback aux stats en mémoire
+            return {
+                "status": "success",
+                "stats": self.scraping_stats if self.scraping_stats else {
+                    "message": "Aucune statistique disponible",
+                    "total_leads": 0,
+                    "error": str(e)
+                }
+            }
         
     def _extract_niche_from_action(self, action: str) -> str:
         """

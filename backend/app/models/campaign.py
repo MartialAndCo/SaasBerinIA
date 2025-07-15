@@ -8,12 +8,14 @@ class Campaign(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    ville = Column(String, nullable=True)  # NOUVELLE COLONNE
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="active")
     target_leads = Column(Integer, default=0)
     agent = Column(String, nullable=True)
     niche_id = Column(Integer, nullable=True)
+    instantly_campaign_id = Column(String, nullable=True)  # ID de la campagne dans Instantly.ai
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

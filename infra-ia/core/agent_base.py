@@ -8,6 +8,14 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
 
+# Import pour accéder aux définitions d'agents centralisées
+try:
+    from utils.agent_definitions import get_agent_definition
+except ImportError:
+    # Fallback si l'import échoue
+    def get_agent_definition(agent_name: str) -> Optional[Dict[str, Any]]:
+        return None
+
 class Agent:
     """
     Classe de base pour tous les agents du système BerinIA
@@ -26,14 +34,53 @@ class Agent:
         """
         self.name = agent_name
         self.agent_id = str(uuid.uuid4())
-        self.config_path = config_path or f"agents/{agent_name.lower()}/config.json"
-        self.prompt_path = f"agents/{agent_name.lower()}/prompt.txt"
+        
+        # CORRECTION : Utiliser les définitions centralisées au lieu de générer automatiquement
+        if config_path:
+            self.config_path = config_path
+        else:
+            # Tenter de récupérer le chemin depuis les définitions centralisées
+            agent_def = get_agent_definition(agent_name)
+            if agent_def and agent_def.get("config_path"):
+                self.config_path = agent_def["config_path"]
+            else:
+                # Fallback avec conversion intelligente du nom
+                folder_name = self._convert_agent_name_to_folder(agent_name)
+                self.config_path = f"agents/{folder_name}/config.json"
+        
+        # Dériver le prompt_path depuis le config_path
+        config_path_obj = Path(self.config_path)
+        self.prompt_path = str(config_path_obj.parent / "prompt.txt")
         
         # Création du timestamp de démarrage
         self.start_timestamp = datetime.now().isoformat()
         
         # Chargement de la configuration
         self.config = self.load_config()
+    
+    def _convert_agent_name_to_folder(self, agent_name: str) -> str:
+        """
+        Convertit intelligemment un nom d'agent en nom de dossier
+        
+        Args:
+            agent_name: Nom de l'agent (ex: "LoggerAgent", "FollowUpAgent")
+            
+        Returns:
+            Nom de dossier approprié (ex: "logger", "follow_up")
+        """
+        # Supprimer le suffixe "Agent" s'il existe
+        name = agent_name
+        if name.endswith("Agent"):
+            name = name[:-5]
+        
+        # Convertir PascalCase en snake_case
+        import re
+        # Insérer un underscore avant chaque majuscule qui suit une minuscule
+        name = re.sub(r'(?<!^)(?=[A-Z][a-z])', '_', name)
+        # Convertir en minuscules
+        name = name.lower()
+        
+        return name
         
     def load_config(self) -> Dict[str, Any]:
         """
@@ -45,12 +92,11 @@ class Agent:
         try:
             config_file = Path(self.config_path)
             if not config_file.exists():
-                # Création d'une configuration par défaut
-                default_config = {"name": self.name}
-                config_file.parent.mkdir(parents=True, exist_ok=True)
-                with open(config_file, "w") as f:
-                    json.dump(default_config, f, indent=2)
-                return default_config
+                # CORRECTION : Ne plus créer automatiquement de dossiers
+                # Utiliser une configuration par défaut en mémoire uniquement
+                print(f"ATTENTION: Fichier de configuration manquant pour {self.name}: {self.config_path}")
+                print(f"L'agent fonctionnera avec une configuration par défaut en mémoire.")
+                return {"name": self.name}
                 
             with open(config_file, "r") as f:
                 return json.load(f)
@@ -70,9 +116,17 @@ class Agent:
         
         try:
             config_file = Path(self.config_path)
-            config_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(config_file, "w") as f:
-                json.dump(self.config, f, indent=2)
+            
+            # CORRECTION : Seulement créer le dossier si le fichier config existe déjà
+            # ou si on est dans un agent défini officiellement
+            agent_def = get_agent_definition(self.name)
+            if config_file.exists() or agent_def:
+                config_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(config_file, "w") as f:
+                    json.dump(self.config, f, indent=2)
+            else:
+                print(f"ATTENTION: Tentative de sauvegarde pour un agent non défini officiellement: {self.name}")
+                print(f"Configuration sauvegardée en mémoire uniquement.")
         except Exception as e:
             print(f"Erreur lors de la sauvegarde de la configuration de {self.name}: {e}")
     

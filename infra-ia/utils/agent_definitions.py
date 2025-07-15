@@ -84,14 +84,6 @@ AGENT_DEFINITIONS = [
     
     # Agents de scraping
     {
-        "name": "NicheExplorerAgent",
-        "module_path": "agents.niche_explorer.niche_explorer_agent",
-        "class_name": "NicheExplorerAgent",
-        "category": "scraping",
-        "description": "Explore et identifie les niches pertinentes",
-        "config_path": "agents/niche_explorer/config.json"
-    },
-    {
         "name": "ScraperAgent",
         "module_path": "agents.scraper.scraper_agent",
         "class_name": "ScraperAgent",
@@ -117,14 +109,7 @@ AGENT_DEFINITIONS = [
         "description": "Attribue un score aux leads",
         "config_path": "agents/scoring/config.json"
     },
-    {
-        "name": "ValidatorAgent",
-        "module_path": "agents.validator.validator_agent",
-        "class_name": "ValidatorAgent",
-        "category": "qualification",
-        "description": "Valide les données des leads",
-        "config_path": "agents/validator/config.json"
-    },
+
     {
         "name": "DuplicateCheckerAgent",
         "module_path": "agents.duplicate_checker.duplicate_checker_agent",
@@ -167,8 +152,24 @@ AGENT_DEFINITIONS = [
         "description": "Écoute les réponses entrantes (webhooks)",
         "config_path": "agents/response_listener/config.json"
     },
+    {
+        "name": "MeetingAgent",
+        "module_path": "agents.meeting.meeting_agent",
+        "class_name": "MeetingAgent",
+        "category": "prospection",
+        "description": "Gère les rendez-vous, interrogation des disponibilités Google Calendar et création de meetings avec liens Jitsi",
+        "config_path": "agents/meeting/config.json"
+    },
     
-    # Agents d'analyse et d'optimisation
+    # Agents d'analyse et d'optimisation (niveau stratégique)
+    {
+        "name": "NicheExplorerAgent",
+        "module_path": "agents.niche_explorer.niche_explorer_agent",
+        "class_name": "NicheExplorerAgent",
+        "category": "analytics",
+        "description": "Explore et identifie les niches pertinentes (niveau stratégique)",
+        "config_path": "agents/niche_explorer/config.json"
+    },
     {
         "name": "PivotStrategyAgent",
         "module_path": "agents.pivot_strategy.pivot_strategy_agent",
@@ -210,14 +211,6 @@ AGENT_DEFINITIONS = [
         "category": "utility",
         "description": "Interroge la base de données en langage naturel",
         "config_path": "agents/database_query/config.json"
-    },
-    {
-        "name": "MetaAgent",
-        "module_path": "agents.meta.meta_agent",
-        "class_name": "MetaAgent",
-        "category": "intelligence",
-        "description": "Intelligence conversationnelle du système (legacy)",
-        "config_path": "agents/meta/config.json"
     },
     {
         "name": "WebPresenceCheckerAgent",

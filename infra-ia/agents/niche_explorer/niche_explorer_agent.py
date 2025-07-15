@@ -261,39 +261,218 @@ class NicheExplorerAgent(Agent):
                 "blacklisted_niches": self.blacklisted_niches
             }
     
-    def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_niche_potential(self, niche: str) -> Dict[str, Any]:
         """
-        Implémentation de la méthode run() principale
+        Analyse le potentiel d'une niche spécifique (méthode interne)
         
         Args:
-            input_data: Les données d'entrée
+            niche: La niche à analyser
             
         Returns:
-            Les données de sortie
+            Dictionnaire avec score et raisonnement
         """
-        action = input_data.get("action", "explore")
+        try:
+            # Critères de scoring pour TPE/PME
+            score = 5  # Score de base
+            reasoning_parts = []
+            
+            # Mots-clés positifs pour TPE/PME
+            positive_keywords = [
+                "local", "artisan", "salon", "garage", "restaurant", "cabinet", "boutique",
+                "coiffure", "médical", "dentaire", "commerce", "service", "réparation"
+            ]
+            
+            # Mots-clés négatifs (trop gros ou pas adaptés)
+            negative_keywords = [
+                "grande surface", "multinationale", "groupe", "holding", "corporation",
+                "banque centrale", "gouvernement", "startup tech", "licorne"
+            ]
+            
+            niche_lower = niche.lower()
+            
+            # Scoring basé sur les mots-clés
+            for keyword in positive_keywords:
+                if keyword in niche_lower:
+                    score += 1
+                    reasoning_parts.append(f"Secteur TPE/PME ({keyword})")
+            
+            for keyword in negative_keywords:
+                if keyword in niche_lower:
+                    score -= 2
+                    reasoning_parts.append(f"Secteur non-TPE ({keyword})")
+            
+            # Bonus pour localisation géographique
+            location_keywords = ["lyon", "marseille", "paris", "bordeaux", "toulouse", "france"]
+            for location in location_keywords:
+                if location in niche_lower:
+                    score += 1
+                    reasoning_parts.append(f"Localisation identifiée ({location})")
+            
+            # Limiter le score entre 0 et 10
+            score = max(0, min(10, score))
+            
+            reasoning = "; ".join(reasoning_parts) if reasoning_parts else "Analyse basique"
+            
+            return {
+                "score": score,
+                "reasoning": reasoning,
+                "potential": "élevé" if score >= 7 else "moyen" if score >= 4 else "faible"
+            }
+            
+        except Exception as e:
+            return {
+                "score": 0,
+                "reasoning": f"Erreur d'analyse: {str(e)}",
+                "potential": "indéterminé"
+            }
+    
+    def discover_niches(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Découvre de nouvelles niches selon les critères TPE/PME
         
-        if action == "explore":
-            return self.explore_niches(input_data)
+        Args:
+            input_data: Données d'entrée avec focus et région
+            
+        Returns:
+            Liste de nouvelles niches découvertes
+        """
+        focus = input_data.get("focus", "TPE/PME")
+        region = input_data.get("region", "France")
         
-        elif action == "analyze":
+        # Niches TPE/PME pré-définies par région
+        discovered_niches = {
+            "France": [
+                "Salons de coiffure ruraux",
+                "Garages automobiles de proximité", 
+                "Cabinets vétérinaires locaux",
+                "Restaurants familiaux",
+                "Magasins de bricolage indépendants",
+                "Pharmacies de quartier",
+                "Boulangeries artisanales",
+                "Agences immobilières locales"
+            ]
+        }
+        
+        niches = discovered_niches.get(region, discovered_niches["France"])
+        
+        # Analyser le potentiel de chaque niche
+        analyzed_niches = []
+        for niche in niches:
+            analysis = self._analyze_niche_potential(niche)
+            analyzed_niches.append({
+                "niche": niche,
+                "potential_score": analysis["score"],
+                "reasoning": analysis["reasoning"]
+            })
+        
+        self.speak(f"Découverte de {len(niches)} niches {focus} en {region}", target="ScrapingSupervisor")
+        
+        return {
+            "status": "success",
+            "discovered_niches": analyzed_niches,
+            "region": region,
+            "focus": focus,
+            "total_count": len(niches)
+        }
+    
+    def strategic_recommendations(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Fournit des recommandations stratégiques basées sur les niches actuelles
+        
+        Args:
+            input_data: Données d'entrée avec niches actuelles
+            
+        Returns:
+            Recommandations stratégiques
+        """
+        current_niches = input_data.get("current_niches", [])
+        
+        recommendations = [
+            {
+                "type": "expansion",
+                "recommendation": "Élargir vers les TPE/PME de services",
+                "priority": "haute",
+                "reason": "Secteur moins saturé avec fort potentiel"
+            },
+            {
+                "type": "geographic", 
+                "recommendation": "Cibler les zones rurales et périurbaines",
+                "priority": "moyenne",
+                "reason": "Moins de concurrence, forte demande de digitalisation"
+            },
+            {
+                "type": "vertical",
+                "recommendation": "Spécialisation secteur santé (cabinets, pharmacies)",
+                "priority": "haute",
+                "reason": "Réglementation forte = besoin d'outils conformes"
+            }
+        ]
+        
+        # Analyser les niches actuelles pour des recommandations personnalisées
+        if current_niches:
+            for niche in current_niches:
+                analysis = self._analyze_niche_potential(niche)
+                if analysis["score"] < 5:
+                    recommendations.append({
+                        "type": "optimize",
+                        "recommendation": f"Revoir la stratégie pour {niche}",
+                        "priority": "urgente",
+                        "reason": f"Potentiel faible détecté (score: {analysis['score']}/10)"
+                    })
+        
+        self.speak(f"Génération de {len(recommendations)} recommandations stratégiques", target="ScrapingSupervisor")
+        
+        return {
+            "status": "success",
+            "recommendations": recommendations,
+            "based_on_niches": current_niches,
+            "analysis_date": datetime.datetime.now().isoformat()
+        }
+    
+    def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Point d'entrée principal du NicheExplorerAgent
+        
+        Args:
+            input_data: Données d'entrée avec l'action à effectuer
+            
+        Returns:
+            Résultat de l'action demandée
+        """
+        action = input_data.get("action", "")
+        
+        if action == "discover_niches":
+            return self.discover_niches(input_data)
+        elif action == "analyze_niche_potential":
             return self.analyze_niche(input_data)
-        
+        elif action == "strategic_recommendations":
+            return self.strategic_recommendations(input_data)
+        elif action == "explore_niches":
+            return self.explore_niches(input_data)
+        elif action == "analyze_niche":
+            return self.analyze_niche(input_data)
         elif action == "manage_blacklist":
             return self.manage_blacklist(input_data)
-        
-        elif action == "get_status":
+        elif action == "get_stats":
             return {
                 "status": "success",
-                "explored_niches": self.explored_niches,
-                "recommended_niches": self.recommended_niches,
-                "blacklisted_niches": self.blacklisted_niches
+                "explored_niches_count": len(self.explored_niches),
+                "recommended_niches_count": len(self.recommended_niches),
+                "blacklisted_niches_count": len(self.blacklisted_niches)
             }
-        
         else:
             return {
                 "status": "error",
-                "message": f"Action non reconnue: {action}"
+                "message": f"Action non reconnue: {action}",
+                "available_actions": [
+                    "discover_niches",
+                    "analyze_niche_potential",
+                    "strategic_recommendations",
+                    "explore_niches",
+                    "analyze_niche",
+                    "manage_blacklist",
+                    "get_stats"
+                ]
             }
 
 # Si ce script est exécuté directement

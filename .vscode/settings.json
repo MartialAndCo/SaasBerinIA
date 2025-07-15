@@ -1,0 +1,55 @@
+{
+  "workbench.editorAssociations": {
+    "*.md": "default"
+  },
+  "remote.autoForwardPorts": false,
+  "remote.autoForwardPortsSource": "output",
+  "remote.forwardOnOpen": false,
+  "remote.portAttributes": {
+    "3000": {
+      "label": "BerinIA Frontend (Next.js)",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "BerinIA API Backend",
+      "onAutoForward": "notify"
+    },
+    "8001": {
+      "label": "BerinIA Webhook Server",
+      "onAutoForward": "ignore"
+    },
+    "6333": {
+      "label": "Qdrant Vector DB",
+      "onAutoForward": "ignore"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "ignore"
+    },
+    "80": {
+      "label": "Nginx",
+      "onAutoForward": "ignore"
+    },
+    "8": {
+      "onAutoForward": "ignore"
+    },
+    "800": {
+      "onAutoForward": "ignore"
+    },
+    "3001": {
+      "onAutoForward": "ignore"
+    },
+    "44404": {
+      "onAutoForward": "ignore"
+    },
+    "44416": {
+      "onAutoForward": "ignore"
+    },
+    "44426": {
+      "onAutoForward": "ignore"
+    },
+    "44430": {
+      "onAutoForward": "ignore"
+    }
+  }
+}

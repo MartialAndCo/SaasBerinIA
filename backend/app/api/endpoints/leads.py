@@ -1,255 +1,376 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy import func
+from typing import Optional, Dict, List
 from datetime import datetime
 
 from app.api import deps
+from app.schemas.lead import LeadCreate, Lead, LeadUpdate, LeadStatusUpdateRequest
+from pydantic import BaseModel
+from typing import Union
 from app.models.lead import Lead as LeadModel
-from app.schemas.lead import Lead, LeadCreate, LeadUpdate, VisualAnalysisCreate, VisualAnalysisUpdate
-from app.crud.lead import update_lead_visual_analysis, create_visual_analysis
 
-# Remplacer
-router = APIRouter(tags=["Leads"])
+router = APIRouter()
 
-@router.get("/", response_model=List[Lead])
-def get_leads(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, le=1000),
-    search: Optional[str] = Query(None),
-    statut: Optional[str] = Query(None),
-    campagne_id: Optional[int] = Query(None),
-    db: Session = Depends(deps.get_db)
-):
-    """
-    Récupère la liste des leads avec filtres optionnels
-    """
-    # Construire la requête de base
-    query = db.query(LeadModel)
-    
-    # Appliquer les filtres
-    if search:
-        query = query.filter(
-            (LeadModel.nom.ilike(f"%{search}%")) | 
-            (LeadModel.email.ilike(f"%{search}%")) |
-            (LeadModel.telephone.ilike(f"%{search}%"))
-        )
-    
-    if statut:
-        query = query.filter(LeadModel.statut == statut)
-    
-    if campagne_id:
-        query = query.filter(LeadModel.campagne_id == campagne_id)
-    
-    # Exécuter la requête avec pagination
-    leads = query.offset(skip).limit(limit).all()
-    return leads
+def lead_to_dict(lead: LeadModel) -> Dict:
+    """Transforme un objet LeadModel en dictionnaire avec les noms de champs attendus par le frontend"""
+    return {
+        "id": lead.id,
+        "nom": f"{lead.first_name or ''} {lead.last_name or ''}".strip() or "Sans nom",
+        "first_name": lead.first_name,
+        "last_name": lead.last_name,
+        "email": lead.email,
+        "telephone": lead.phone,
+        "phone": lead.phone,
+        # Priorité à la colonne entreprise puis company
+        "entreprise": lead.entreprise or lead.company,
+        "company": lead.company,
+        "position": lead.position,
+        "industry": lead.industry,
+        "source": lead.source,
+        "linkedin_url": lead.linkedin_url,
+        "website": lead.website,
+        "niche_id": lead.niche_id,
+        "score": lead.score,
+        "score_details": lead.score_details,
+        "validation_status": lead.validation_status,
+        "last_contact": lead.last_contact,
+        "statut": lead.status or "new",
+        "status": lead.status or "new",
+        "date_creation": lead.created_at,
+        "created_at": lead.created_at,
+        "updated_at": lead.updated_at,
+        "campagne_id": lead.campagne_id,
+        "notes": lead.notes,
+        "visual_score": lead.visual_score,
+        "has_popup": lead.has_popup,
+        "popup_removed": lead.popup_removed,
+        "screenshot_path": lead.screenshot_path,
+        "enhanced_screenshot_path": lead.enhanced_screenshot_path,
+        "visual_analysis_date": lead.visual_analysis_date,
+        "site_type": lead.site_type,
+        "visual_quality": lead.visual_quality,
+        "website_maturity": lead.website_maturity,
+        "design_strengths": lead.design_strengths,
+        "design_weaknesses": lead.design_weaknesses,
+        "visual_analysis_data": lead.visual_analysis_data,
+        # Ajout des champs de facturation
+        "billing_address": lead.billing_address,
+        "billing_city": lead.billing_city,
+        "billing_postal_code": lead.billing_postal_code,
+        "billing_country": lead.billing_country,
+        "vat_number": lead.vat_number,
+        "billing_email": lead.billing_email,
+        "billing_contact_name": lead.billing_contact_name,
+        "stripe_customer_id": lead.stripe_customer_id,
+    }
 
-@router.post("/", response_model=Lead, status_code=status.HTTP_201_CREATED)
+@router.post("/")
 def create_lead(lead: LeadCreate, db: Session = Depends(deps.get_db)):
-    """
-    Crée un nouveau lead
-    """
+    """Crée un nouveau lead"""
     db_lead = LeadModel(
-        nom=lead.nom,
+        first_name=lead.nom.split()[0] if lead.nom else "",
+        last_name=" ".join(lead.nom.split()[1:]) if len(lead.nom.split()) > 1 else "",
         email=lead.email,
-        telephone=lead.telephone,
-        entreprise=lead.entreprise,
-        statut=lead.statut,
+        phone=lead.telephone,
+        company=lead.entreprise,
+        status=lead.statut or "new",
         campagne_id=lead.campagne_id
     )
     db.add(db_lead)
     db.commit()
     db.refresh(db_lead)
-    return db_lead
+    return lead_to_dict(db_lead)
 
-@router.get("/{lead_id}", response_model=Lead)
-def get_lead(lead_id: int, db: Session = Depends(deps.get_db)):
-    """
-    Récupère un lead spécifique par son ID
-    """
-    lead = db.query(LeadModel).filter(LeadModel.id == lead_id).first()
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
-    return lead
-
-@router.put("/{lead_id}", response_model=Lead)
-def update_lead(lead_id: int, lead: LeadUpdate, db: Session = Depends(deps.get_db)):
-    """
-    Met à jour un lead existant
-    """
-    db_lead = db.query(LeadModel).filter(LeadModel.id == lead_id).first()
-    if not db_lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
-    
-    update_data = lead.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_lead, key, value)
-    
-    db.commit()
-    db.refresh(db_lead)
-    return db_lead
-
-@router.delete("/{lead_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_lead(lead_id: int, db: Session = Depends(deps.get_db)):
-    """
-    Supprime un lead
-    """
-    db_lead = db.query(LeadModel).filter(LeadModel.id == lead_id).first()
-    if not db_lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
-    
-    db.delete(db_lead)
-    db.commit()
-    return None
-
-@router.get("/export", status_code=status.HTTP_200_OK)
-def export_leads(
+# Routes spécifiques AVANT les routes avec paramètres
+@router.get("/kanban")
+def get_leads_kanban(
+    db: Session = Depends(deps.get_db),
     campagne_id: Optional[int] = Query(None),
-    format: str = Query("csv", regex="^(csv|excel)$"),
-    db: Session = Depends(deps.get_db)
+    search: Optional[str] = Query(None)
 ):
-    """
-    Exporte les leads au format CSV ou Excel
-    """
-    # Construire la requête
+    """Récupère les leads groupés par statut pour le kanban"""
+    query = db.query(LeadModel)
+    
+    # Filtres
+    if campagne_id:
+        query = query.filter(LeadModel.campagne_id == campagne_id)
+    
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            LeadModel.first_name.ilike(search_term) |
+            LeadModel.last_name.ilike(search_term) |
+            LeadModel.email.ilike(search_term) |
+            LeadModel.company.ilike(search_term)
+        )
+    
+    leads = query.all()
+    
+    # Grouper par statut
+    kanban_data = {
+        "new": [],
+        "qualification": [],
+        "presentation": [],
+        "negotiation": [],
+        "evaluation": [],
+        "won": [],
+        "lost": []
+    }
+    
+    # Mapping pour normaliser les statuts incohérents
+    status_mapping = {
+        "qualified": "qualification",  # Normaliser "qualified" vers "qualification"
+        "qualify": "qualification",    # Autres variantes possibles
+        "qualifié": "qualification",   # Version française
+    }
+    
+    for lead in leads:
+        status = lead.status or "new"
+        # Appliquer le mapping si nécessaire
+        normalized_status = status_mapping.get(status, status)
+        
+        lead_dict = lead_to_dict(lead)
+        if normalized_status in kanban_data:
+            kanban_data[normalized_status].append(lead_dict)
+        else:
+            kanban_data["new"].append(lead_dict)  # Fallback pour les statuts inconnus
+    
+    return kanban_data
+
+@router.get("/stats")
+def get_leads_stats(
+    db: Session = Depends(deps.get_db),
+    campagne_id: Optional[int] = Query(None)
+):
+    """Récupère les statistiques des leads"""
     query = db.query(LeadModel)
     
     if campagne_id:
         query = query.filter(LeadModel.campagne_id == campagne_id)
     
+    # Total des leads
+    total = query.count()
+    
+    # Statistiques par statut
+    status_stats = db.query(
+        LeadModel.status,
+        func.count(LeadModel.id).label('count')
+    )
+    
+    if campagne_id:
+        status_stats = status_stats.filter(LeadModel.campagne_id == campagne_id)
+    
+    status_stats = status_stats.group_by(LeadModel.status).all()
+    
+    by_status = {stat.status or "new": stat.count for stat in status_stats}
+    
+    # Statistiques par campagne
+    campaign_stats = db.query(
+        LeadModel.campagne_id,
+        func.count(LeadModel.id).label('count')
+    ).filter(LeadModel.campagne_id.isnot(None)).group_by(LeadModel.campagne_id).all()
+    
+    by_campaign = {f"campaign_{stat.campagne_id}": stat.count for stat in campaign_stats}
+    
+    return {
+        "total": total,
+        "by_status": by_status,
+        "by_campaign": by_campaign
+    }
+
+@router.get("/export")
+def export_leads(
+    db: Session = Depends(deps.get_db),
+    status: Optional[str] = Query(None),
+    campagne_id: Optional[int] = Query(None),
+    search: Optional[str] = Query(None)
+):
+    """Exporte les leads au format CSV"""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    
+    query = db.query(LeadModel)
+    
+    # Filtres
+    if status and status != "all":
+        query = query.filter(LeadModel.status == status)
+    
+    if campagne_id:
+        query = query.filter(LeadModel.campagne_id == campagne_id)
+    
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            LeadModel.first_name.ilike(search_term) |
+            LeadModel.last_name.ilike(search_term) |
+            LeadModel.email.ilike(search_term) |
+            LeadModel.company.ilike(search_term)
+        )
+    
     leads = query.all()
     
-    # Ici, vous implémenteriez la logique d'export réelle
-    # Pour l'instant, nous retournons juste un message de succès
-    return {"message": f"{len(leads)} leads exportés au format {format}"}
+    # Créer le CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # En-têtes
+    writer.writerow([
+        "ID", "Nom", "Email", "Téléphone", "Entreprise", 
+        "Statut", "Date de création", "Campagne ID", "Notes"
+    ])
+    
+    # Données
+    for lead in leads:
+        writer.writerow([
+            lead.id,
+            f"{lead.first_name} {lead.last_name}".strip(),
+            lead.email,
+            lead.phone or "",
+            lead.company or "",
+            lead.status or "new",
+            lead.created_at.strftime("%Y-%m-%d %H:%M:%S") if lead.created_at else "",
+            lead.campagne_id or "",
+            lead.notes or ""
+        ])
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=leads.csv"}
+    )
 
-# Endpoints pour l'analyse visuelle
-
-@router.post("/{lead_id}/visual-analysis", response_model=Lead)
-def add_visual_analysis(
-    lead_id: int, 
-    analysis: VisualAnalysisCreate, 
-    db: Session = Depends(deps.get_db)
+@router.get("/")
+def get_leads(
+    db: Session = Depends(deps.get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(25, ge=1, le=100),
+    status: Optional[str] = Query(None),
+    campagne_id: Optional[int] = Query(None),
+    search: Optional[str] = Query(None),
+    sort_by: Optional[str] = Query("newest", description="newest, oldest")
 ):
-    """
-    Ajoute une analyse visuelle à un lead existant
-    """
-    # Vérifier que le lead existe
+    """Récupère la liste des leads avec pagination et filtres"""
+    query = db.query(LeadModel)
+    
+    # Filtres
+    if status and status != "all":
+        query = query.filter(LeadModel.status == status)
+    
+    if campagne_id:
+        query = query.filter(LeadModel.campagne_id == campagne_id)
+    
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            LeadModel.first_name.ilike(search_term) |
+            LeadModel.last_name.ilike(search_term) |
+            LeadModel.email.ilike(search_term) |
+            LeadModel.company.ilike(search_term)
+        )
+    
+    # Tri par date de création
+    if sort_by == "oldest":
+        query = query.order_by(LeadModel.created_at.asc())
+    else:  # newest par défaut
+        query = query.order_by(LeadModel.created_at.desc())
+    
+    # Compter le total pour la pagination
+    total = query.count()
+    
+    # Pagination
+    offset = (page - 1) * limit
+    leads = query.offset(offset).limit(limit).all()
+    
+    # Transformer en dictionnaires avec les bons noms de champs
+    leads_data = [lead_to_dict(lead) for lead in leads]
+    
+    return {
+        "leads": leads_data,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": (total + limit - 1) // limit
+    }
+
+@router.get("/{lead_id}")
+def get_lead(lead_id: int, db: Session = Depends(deps.get_db)):
+    """Récupère un lead spécifique"""
     lead = db.query(LeadModel).filter(LeadModel.id == lead_id).first()
     if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
-    
-    # Définir l'ID du lead dans l'analyse
-    analysis.lead_id = lead_id
-    
-    # Créer l'analyse visuelle
-    updated_lead = create_visual_analysis(db, analysis)
-    if not updated_lead:
-        raise HTTPException(status_code=500, detail="Failed to create visual analysis")
-    
-    return updated_lead
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+    return lead_to_dict(lead)
 
-@router.put("/{lead_id}/visual-analysis", response_model=Lead)
-def update_visual_analysis(
-    lead_id: int, 
-    analysis: VisualAnalysisUpdate, 
-    db: Session = Depends(deps.get_db)
-):
-    """
-    Met à jour l'analyse visuelle d'un lead existant
-    """
-    # Vérifier que le lead existe
+@router.put("/{lead_id}")
+def update_lead(lead_id: int, lead_data: LeadUpdate, db: Session = Depends(deps.get_db)):
+    """Met à jour un lead"""
     lead = db.query(LeadModel).filter(LeadModel.id == lead_id).first()
     if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
     
-    # Mettre à jour l'analyse visuelle
-    updated_lead = update_lead_visual_analysis(db, lead_id, analysis)
-    if not updated_lead:
-        raise HTTPException(status_code=500, detail="Failed to update visual analysis")
+    # Mettre à jour les champs
+    if lead_data.nom:
+        parts = lead_data.nom.split()
+        lead.first_name = parts[0] if parts else ""
+        lead.last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
     
-    return updated_lead
-
-@router.post("/{lead_id}/upload-screenshot", response_model=Lead)
-async def upload_screenshot(
-    lead_id: int,
-    screenshot_type: str = Query(..., regex="^(original|enhanced)$"),
-    file: UploadFile = File(...),
-    db: Session = Depends(deps.get_db)
-):
-    """
-    Télécharge une capture d'écran pour un lead
-    """
-    # Vérifier que le lead existe
-    lead = db.query(LeadModel).filter(LeadModel.id == lead_id).first()
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
+    if lead_data.email:
+        lead.email = lead_data.email
     
-    # Vérifier que le fichier est une image
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+    if lead_data.telephone:
+        lead.phone = lead_data.telephone
     
-    # Définir le chemin de sauvegarde
-    import os
-    from pathlib import Path
+    if lead_data.entreprise:
+        lead.company = lead_data.entreprise
     
-    # Créer les répertoires nécessaires
-    screenshots_dir = Path("screenshots")
-    if not os.path.exists(screenshots_dir):
-        os.makedirs(screenshots_dir)
+    if lead_data.statut:
+        lead.status = lead_data.statut
     
-    # Générer un nom de fichier unique
-    file_extension = os.path.splitext(file.filename)[1]
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{lead_id}_{screenshot_type}_{timestamp}{file_extension}"
-    filepath = screenshots_dir / filename
-    
-    # Enregistrer le fichier
-    with open(filepath, "wb") as buffer:
-        buffer.write(await file.read())
-    
-    # Mettre à jour le chemin dans la base de données
-    if screenshot_type == "original":
-        lead.screenshot_path = str(filepath)
-    else:
-        lead.enhanced_screenshot_path = str(filepath)
+    if lead_data.campagne_id is not None:
+        lead.campagne_id = lead_data.campagne_id
     
     db.commit()
     db.refresh(lead)
-    
-    return lead
+    return lead_to_dict(lead)
 
-@router.get("/visual-analysis", response_model=List[Lead])
-def get_leads_with_visual_analysis(
-    min_score: Optional[int] = Query(None, ge=0, le=100),
-    has_popup: Optional[bool] = Query(None),
-    site_type: Optional[str] = Query(None),
-    min_quality: Optional[int] = Query(None, ge=0, le=10),
-    maturity: Optional[str] = Query(None),
-    db: Session = Depends(deps.get_db)
-):
-    """
-    Récupère les leads avec filtrage sur les critères d'analyse visuelle
-    """
-    # Construire la requête de base
-    query = db.query(LeadModel).filter(LeadModel.visual_analysis_date.isnot(None))
+@router.patch("/{lead_id}/status")
+def update_lead_status(lead_id: int, status_data: LeadStatusUpdateRequest, db: Session = Depends(deps.get_db)):
+    """Met à jour le statut d'un lead (pour le kanban)"""
+    lead = db.query(LeadModel).filter(LeadModel.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
     
-    # Appliquer les filtres
-    if min_score is not None:
-        query = query.filter(LeadModel.visual_score >= min_score)
+    # Valider le statut
+    valid_statuses = ["new", "qualification", "presentation", "negotiation", "evaluation", "won", "lost"]
+    if status_data.status not in valid_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+        )
     
-    if has_popup is not None:
-        query = query.filter(LeadModel.has_popup == has_popup)
+    lead.status = status_data.status
     
-    if site_type:
-        query = query.filter(LeadModel.site_type == site_type)
+    # Ajouter une note si fournie
+    if status_data.notes:
+        if lead.notes:
+            lead.notes += f"\n{status_data.notes}"
+        else:
+            lead.notes = status_data.notes
     
-    if min_quality is not None:
-        query = query.filter(LeadModel.visual_quality >= min_quality)
+    db.commit()
+    db.refresh(lead)
+    return lead_to_dict(lead)
+
+@router.delete("/{lead_id}")
+def delete_lead(lead_id: int, db: Session = Depends(deps.get_db)):
+    """Supprime un lead"""
+    lead = db.query(LeadModel).filter(LeadModel.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
     
-    if maturity:
-        query = query.filter(LeadModel.website_maturity == maturity)
-    
-    # Exécuter la requête
-    leads = query.all()
-    return leads
+    db.delete(lead)
+    db.commit()
+    return {"message": "Lead deleted successfully"}
