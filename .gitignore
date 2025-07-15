@@ -37,3 +37,7 @@ whatsapp-bot/.wwebjs_auth/
 # Secrets & config sensibles
 .env
 *.env
+# Secrets ignorés
+infra-ia/agents/meeting/token.pickle
+infra-ia/agents/meeting/config.json
+infra-ia/agents/meeting/credentials.json
